@@ -30,6 +30,13 @@ export const getUser = () => {
     return apiClient.get('/v1/user');
 };
 
+// --- FUNGSI BARU ---
+// Fungsi untuk mendapatkan data ringkasan/statistik
+export const getSummary = () => {
+    return apiClient.get('/v1/tasks/summary');
+};
+// --------------------
+
 // Fungsi untuk mendapatkan semua tugas (dengan filter)
 export const getTasks = (params) => {
     return apiClient.get('/v1/tasks', { params });

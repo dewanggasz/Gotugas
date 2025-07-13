@@ -24,17 +24,36 @@ class TaskController extends Controller
         $user = Auth::user();
         $query = Task::query();
 
+        // Admin bisa melihat semua tugas, karyawan hanya tugasnya sendiri
         if (!$user->isAdmin()) {
             $query->where('user_id', $user->id);
         }
 
-        if ($request->has('month') && $request->has('year')) {
-            $query->whereMonth('created_at', $request->month)
-                  ->whereYear('created_at', $request->year);
+        // --- Filter berdasarkan status ---
+        if ($request->filled('status') && $request->status !== 'all') {
+            $query->where('status', $request->status);
         }
 
-        return TaskResource::collection($query->latest()->paginate(10));
+        // --- Filter berdasarkan pencarian judul ---
+        if ($request->filled('search')) {
+            $query->where('title', 'like', '%' . $request->search . '%');
+        }
+
+        // --- Logika Sorting ---
+        $sortBy = $request->input('sort_by', 'newest');
+        match ($sortBy) {
+            'oldest' => $query->orderBy('created_at', 'asc'),
+            'due_date_asc' => $query->orderBy('due_date', 'asc'),
+            'due_date_desc' => $query->orderBy('due_date', 'desc'),
+            default => $query->orderBy('created_at', 'desc'), // 'newest'
+        };
+
+        // --- Pagination ---
+        $perPage = $request->input('per_page', 10);
+        
+        return TaskResource::collection($query->paginate($perPage));
     }
+
 
     /**
      * Get a summary of tasks.
