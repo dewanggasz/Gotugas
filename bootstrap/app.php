@@ -3,6 +3,9 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -10,11 +13,22 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
+        // Tambahkan callback 'then' untuk mendaftarkan rate limiter
+        then: function () {
+            RateLimiter::for('api', function (Request $request) {
+                // Aturan: 60 request per menit per pengguna (jika login) atau per alamat IP (jika tamu)
+                return Limit::perMinute(60)->by($request->user()?->id ?: $request->ip());
+            });
+        }
     )
     ->withMiddleware(function (Middleware $middleware) {
-        //
+        // Middleware untuk grup 'api' sudah benar dan tidak perlu diubah.
+        $middleware->api([
+            \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ]);
     })
-    ->withProviders([ // <-- Tambahkan method ini
+    ->withProviders([
         \App\Providers\AuthServiceProvider::class,
     ])
     ->withExceptions(function (Exceptions $exceptions) {
