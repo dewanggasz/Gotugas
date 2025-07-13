@@ -32,11 +32,11 @@ class TaskPolicy
 
     /**
      * Determine whether the user can view the model.
-     * User hanya bisa melihat tugas miliknya.
+     * User bisa melihat tugas jika dia pembuatnya ATAU jika ditugaskan kepadanya.
      */
     public function view(User $user, Task $task): bool
     {
-        return $user->id === $task->user_id;
+        return $user->id === $task->user_id || $user->id === $task->assigned_to_id;
     }
 
     /**
@@ -50,7 +50,7 @@ class TaskPolicy
 
     /**
      * Determine whether the user can update the model.
-     * User hanya bisa mengupdate tugas miliknya.
+     * Hanya pembuat yang bisa mengupdate.
      */
     public function update(User $user, Task $task): bool
     {
@@ -59,7 +59,7 @@ class TaskPolicy
 
     /**
      * Determine whether the user can delete the model.
-     * User hanya bisa menghapus tugas miliknya.
+     * Hanya pembuat yang bisa menghapus.
      */
     public function delete(User $user, Task $task): bool
     {

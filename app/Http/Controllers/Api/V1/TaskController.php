@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Support\Carbon; // <-- Tambahkan import ini
+use Illuminate\Support\Carbon;
 
 class TaskController extends Controller
 {
@@ -22,42 +22,39 @@ class TaskController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $query = Task::query();
+        // Muat relasi untuk efisiensi query
+        $query = Task::with(['user', 'assignee']);
 
-        // Admin bisa melihat semua tugas, karyawan hanya tugasnya sendiri
         if (!$user->isAdmin()) {
-            $query->where('user_id', $user->id);
+            // Tampilkan tugas yang dibuat oleh user ATAU ditugaskan kepada user
+            $query->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhere('assigned_to_id', $user->id);
+            });
         }
 
-        // --- Filter berdasarkan status ---
         if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);
         }
 
-        // --- Filter berdasarkan pencarian judul ---
         if ($request->filled('search')) {
             $query->where('title', 'like', '%' . $request->search . '%');
         }
 
-        // --- Logika Sorting ---
         $sortBy = $request->input('sort_by', 'newest');
         match ($sortBy) {
             'oldest' => $query->orderBy('created_at', 'asc'),
             'due_date_asc' => $query->orderBy('due_date', 'asc'),
             'due_date_desc' => $query->orderBy('due_date', 'desc'),
-            default => $query->orderBy('created_at', 'desc'), // 'newest'
+            default => $query->orderBy('created_at', 'desc'),
         };
 
-        // --- Pagination ---
         $perPage = $request->input('per_page', 10);
-        
         return TaskResource::collection($query->paginate($perPage));
     }
 
-
     /**
      * Get a summary of tasks.
-     * Metode baru untuk statistik.
      */
     public function summary(Request $request)
     {
@@ -113,13 +110,14 @@ class TaskController extends Controller
             'description' => 'nullable|string',
             'status' => ['required', Rule::in(['not_started', 'in_progress', 'completed', 'cancelled'])],
             'due_date' => 'nullable|date',
+            'assigned_to_id' => 'nullable|exists:users,id', // Validasi input baru
         ]);
         
         /** @var \App\Models\User $user */
         $user = Auth::user();
         $task = $user->tasks()->create($validated);
 
-        return new TaskResource($task);
+        return new TaskResource($task->load(['user', 'assignee']));
     }
 
     /**
@@ -128,7 +126,7 @@ class TaskController extends Controller
     public function show(Task $task)
     {
         $this->authorize('view', $task);
-        return new TaskResource($task);
+        return new TaskResource($task->load(['user', 'assignee']));
     }
 
     /**
@@ -143,11 +141,12 @@ class TaskController extends Controller
             'description' => 'nullable|string',
             'status' => ['sometimes', 'required', Rule::in(['not_started', 'in_progress', 'completed', 'cancelled'])],
             'due_date' => 'nullable|date',
+            'assigned_to_id' => 'nullable|sometimes|exists:users,id', // Validasi input baru
         ]);
 
         $task->update($validated);
 
-        return new TaskResource($task);
+        return new TaskResource($task->load(['user', 'assignee']));
     }
 
     /**

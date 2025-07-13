@@ -21,38 +21,25 @@ apiClient.interceptors.request.use(config => {
 });
 
 // Fungsi untuk login
-export const login = (credentials) => {
-    return apiClient.post('/login', credentials);
-};
+export const login = (credentials) => apiClient.post('/login', credentials);
 
-// Fungsi untuk mendapatkan data user
-export const getUser = () => {
-    return apiClient.get('/v1/user');
-};
+// Fungsi untuk mendapatkan data user yang sedang login
+export const getUser = () => apiClient.get('/v1/user');
 
-// --- FUNGSI BARU ---
+// Fungsi untuk mendapatkan daftar semua pengguna
+export const getUsers = () => apiClient.get('/v1/users');
+
 // Fungsi untuk mendapatkan data ringkasan/statistik
-export const getSummary = () => {
-    return apiClient.get('/v1/tasks/summary');
-};
-// --------------------
+export const getSummary = () => apiClient.get('/v1/tasks/summary');
 
 // Fungsi untuk mendapatkan semua tugas (dengan filter)
-export const getTasks = (params) => {
-    return apiClient.get('/v1/tasks', { params });
-};
+export const getTasks = (params) => apiClient.get('/v1/tasks', { params });
 
 // Fungsi untuk membuat tugas baru
-export const createTask = (taskData) => {
-    return apiClient.post('/v1/tasks', taskData);
-};
+export const createTask = (taskData) => apiClient.post('/v1/tasks', taskData);
 
 // Fungsi untuk mengupdate tugas
-export const updateTask = (id, taskData) => {
-    return apiClient.put(`/v1/tasks/${id}`, taskData);
-};
+export const updateTask = (id, taskData) => apiClient.put(`/v1/tasks/${id}`, taskData);
 
 // Fungsi untuk menghapus tugas
-export const deleteTask = (id) => {
-    return apiClient.delete(`/v1/tasks/${id}`);
-};
+export const deleteTask = (id) => apiClient.delete(`/v1/tasks/${id}`);

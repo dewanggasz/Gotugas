@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 
-export default function TaskForm({ onSubmit, onCancel, task }) {
+export default function TaskForm({ onSubmit, onCancel, task, users = [], currentUser }) {
   // State untuk setiap input form
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState('not_started');
   const [dueDate, setDueDate] = useState('');
+  const [assignedToId, setAssignedToId] = useState('');
 
   // useEffect untuk mengisi form jika sedang dalam mode edit
   useEffect(() => {
@@ -14,12 +15,24 @@ export default function TaskForm({ onSubmit, onCancel, task }) {
       setDescription(task.description || '');
       setStatus(task.status || 'not_started');
       setDueDate(task.due_date || '');
+      // Set assignee jika ada, jika tidak kosongkan (tugas untuk diri sendiri)
+      setAssignedToId(task.assignee?.id || '');
+    } else {
+      // Saat membuat tugas baru, default tugaskan ke diri sendiri
+      setAssignedToId(currentUser?.id || '');
     }
-  }, [task]);
+  }, [task, currentUser]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const taskData = { title, description, status, due_date: dueDate };
+    const taskData = { 
+      title, 
+      description, 
+      status, 
+      due_date: dueDate,
+      // Kirim null jika tidak ada yang dipilih
+      assigned_to_id: assignedToId ? parseInt(assignedToId) : null,
+    };
     onSubmit(taskData);
   };
 
@@ -36,6 +49,23 @@ export default function TaskForm({ onSubmit, onCancel, task }) {
           required
         />
       </div>
+
+      {/* Dropdown "Assign To" */}
+      <div className="mb-4">
+        <label htmlFor="assignedToId" className="block text-gray-700 mb-2">Assign To</label>
+        <select
+          id="assignedToId"
+          value={assignedToId}
+          onChange={(e) => setAssignedToId(e.target.value)}
+          className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+        >
+          <option value="">-- For Myself --</option>
+          {users.map(user => (
+            <option key={user.id} value={user.id}>{user.name}</option>
+          ))}
+        </select>
+      </div>
+
       <div className="mb-4">
         <label htmlFor="description" className="block text-gray-700 mb-2">Description</label>
         <textarea
@@ -53,7 +83,7 @@ export default function TaskForm({ onSubmit, onCancel, task }) {
             id="status"
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             <option value="not_started">Not Started</option>
             <option value="in_progress">In Progress</option>

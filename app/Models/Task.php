@@ -17,6 +17,7 @@ class Task extends Model
      */
     protected $fillable = [
         'user_id',
+        'assigned_to_id', // <-- Tambahkan ini
         'title',
         'description',
         'status',
@@ -30,16 +31,22 @@ class Task extends Model
      */
     protected $casts = [
         'due_date' => 'date',
-        // Casting untuk memastikan tipe data 'status' konsisten
         'status' => 'string',
     ];
 
     /**
-     * Mendefinisikan relasi "belongs-to" ke model User.
-     * Sebuah Task dimiliki oleh satu User.
+     * Mendefinisikan relasi "belongs-to" ke model User (pembuat tugas).
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Mendefinisikan relasi "belongs-to" ke model User (yang ditugaskan).
+     */
+    public function assignee(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to_id');
     }
 }

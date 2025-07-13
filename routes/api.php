@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\TaskController;
+use App\Http\Controllers\Api\V1\UserController; // <-- Tambahkan ini
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -12,6 +13,9 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+    // Rute untuk mendapatkan daftar semua pengguna
+    Route::get('users', [UserController::class, 'index']);
 
     // Rute untuk mendapatkan ringkasan tugas
     Route::get('tasks/summary', [TaskController::class, 'summary']);
