@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
+// 1. Tambahkan import ini
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+// 2. Implementasikan FilamentUser
+class User extends Authenticatable implements FilamentUser
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -21,7 +25,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', // Tambahkan role agar bisa diisi secara massal
+        'role',
     ];
 
     /**
@@ -42,13 +46,21 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
-        // Casting untuk memastikan tipe data 'role' konsisten
         'role' => 'string',
     ];
 
+
     /**
-     * Mendefinisikan relasi "one-to-many" ke model Task.
-     * Seorang User bisa memiliki banyak Task.
+     * Determine if the user can access the Filament admin panel.
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // Hanya user dengan peran 'admin' yang bisa mengakses panel
+        return $this->role === 'admin';
+    }
+
+    /**
+     * Get the tasks for the user.
      */
     public function tasks(): HasMany
     {
@@ -56,7 +68,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Helper function untuk mengecek apakah user adalah admin.
+     * Check if the user is an admin.
      */
     public function isAdmin(): bool
     {
