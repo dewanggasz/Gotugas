@@ -9,31 +9,77 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Support\Carbon; // <-- Tambahkan import ini
 
 class TaskController extends Controller
 {
     use AuthorizesRequests;
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
-        /** @var \App\Models\User $user */ // <-- Tambahkan ini
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $query = Task::query();
 
-        // Admin bisa melihat semua tugas, karyawan hanya tugasnya sendiri
         if (!$user->isAdmin()) {
             $query->where('user_id', $user->id);
         }
 
-        // Logika filter berdasarkan bulan dan tahun
         if ($request->has('month') && $request->has('year')) {
             $query->whereMonth('created_at', $request->month)
                   ->whereYear('created_at', $request->year);
         }
 
         return TaskResource::collection($query->latest()->paginate(10));
+    }
+
+    /**
+     * Get a summary of tasks.
+     * Metode baru untuk statistik.
+     */
+    public function summary(Request $request)
+    {
+        /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        // Query dasar untuk tugas milik pengguna (atau semua tugas jika admin)
+        $tasksQuery = Task::query();
+        if (!$user->isAdmin()) {
+            $tasksQuery->where('user_id', $user->id);
+        }
+
+        // Hitung statistik
+        $createdThisMonth = (clone $tasksQuery)
+            ->whereYear('created_at', Carbon::now()->year)
+            ->whereMonth('created_at', Carbon::now()->month)
+            ->count();
+
+        $completedThisMonth = (clone $tasksQuery)
+            ->where('status', 'completed')
+            ->whereYear('updated_at', Carbon::now()->year)
+            ->whereMonth('updated_at', Carbon::now()->month)
+            ->count();
+
+        $inProgress = (clone $tasksQuery)->where('status', 'in_progress')->count();
+
+        $cancelled = (clone $tasksQuery)->where('status', 'cancelled')->count();
+
+        $overdue = (clone $tasksQuery)
+            ->where('status', '!=', 'completed')
+            ->whereNotNull('due_date')
+            ->whereDate('due_date', '<', Carbon::now())
+            ->count();
+
+        return response()->json([
+            'created_this_month' => $createdThisMonth,
+            'completed_this_month' => $completedThisMonth,
+            'in_progress' => $inProgress,
+            'cancelled' => $cancelled,
+            'overdue' => $overdue,
+        ]);
     }
 
     /**
@@ -49,8 +95,8 @@ class TaskController extends Controller
             'status' => ['required', Rule::in(['not_started', 'in_progress', 'completed', 'cancelled'])],
             'due_date' => 'nullable|date',
         ]);
-
-        /** @var \App\Models\User $user */ // <-- Tambahkan ini
+        
+        /** @var \App\Models\User $user */
         $user = Auth::user();
         $task = $user->tasks()->create($validated);
 
@@ -92,6 +138,6 @@ class TaskController extends Controller
     {
         $this->authorize('delete', $task);
         $task->delete();
-        return response()->noContent(); // 204 No Content
+        return response()->noContent();
     }
 }

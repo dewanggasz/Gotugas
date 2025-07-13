@@ -13,6 +13,9 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
         return $request->user();
     });
 
+    // Rute untuk mendapatkan ringkasan tugas
+    Route::get('tasks/summary', [TaskController::class, 'summary']);
+
     // Rute resource untuk Task
     Route::apiResource('tasks', TaskController::class);
 
