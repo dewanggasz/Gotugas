@@ -38,11 +38,13 @@ export const uploadProfilePhoto = (photoFile) => {
         headers: { 'Content-Type': 'multipart/form-data' },
     });
 };
+export const updateProfileInfo = (profileData) => apiClient.put('/v1/user/profile', profileData);
+export const updatePassword = (passwordData) => apiClient.put('/v1/user/password', passwordData);
 
-// --- FUNGSI BARU UNTUK UPDATE PROFIL & PASSWORD ---
-export const updateProfileInfo = (profileData) => {
-    return apiClient.put('/v1/user/profile', profileData);
+// --- FUNGSI STATISTIK TERPADU BARU ---
+// Mengambil semua data statistik dalam satu panggilan
+export const getStatistics = (params) => {
+    return apiClient.get('/v1/statistics', { params });
 };
-export const updatePassword = (passwordData) => {
-    return apiClient.put('/v1/user/password', passwordData);
-};
+
+
