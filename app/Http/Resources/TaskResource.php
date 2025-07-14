@@ -27,14 +27,15 @@ class TaskResource extends JsonResource
             // Sertakan data pembuat (user)
             'user' => UserResource::make($this->whenLoaded('user')),
             
-            // Sertakan daftar kolaborator beserta izin mereka
+            // Sertakan daftar kolaborator beserta izin dan URL foto mereka
             'collaborators' => $this->whenLoaded('collaborators', function () {
                 return $this->collaborators->map(function ($user) {
                     return [
                         'id' => $user->id,
                         'name' => $user->name,
                         'email' => $user->email,
-                        'permission' => $user->pivot->permission, // Ambil data izin dari tabel pivot
+                        'permission' => $user->pivot->permission,
+                        'profile_photo_url' => $user->profile_photo_url, // <-- Perbaikan ada di sini
                     ];
                 });
             }),

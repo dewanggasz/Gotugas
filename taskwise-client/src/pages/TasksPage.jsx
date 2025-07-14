@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getTasks, createTask, updateTask, deleteTask, getUsers } from '../services/api';
+import { getTasks, createTask, updateTask, deleteTask, getUsers, getUser } from '../services/api';
 import Modal from '../components/Modal';
 import TaskForm from '../components/TaskForm';
 import TaskDetailModal from '../components/TaskDetailModal';
@@ -27,6 +27,7 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
+// --- Komponen TaskDisplay Diperbarui ---
 const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -57,14 +58,45 @@ const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
       </div>
     );
   };
-  const CollaboratorAvatars = ({ collaborators, creator }) => (
-    <div className="flex items-center -space-x-2">
-      {collaborators.filter(c => c.id !== creator.id).slice(0, 3).map(user => (
-        <div key={user.id} className="h-8 w-8 rounded-full bg-gray-300 flex items-center justify-center text-xs font-bold text-white ring-2 ring-white" title={user.name}>{user.name.charAt(0)}</div>
-      ))}
-      {collaborators.length > 4 && (<div className="h-8 w-8 rounded-full bg-gray-500 flex items-center justify-center text-xs font-bold text-white ring-2 ring-white">+{collaborators.length - 3}</div>)}
-    </div>
-  );
+  
+  // Komponen Avatar baru yang lebih cerdas
+  const Avatar = ({ user }) => {
+    if (!user) return null;
+    return (
+      <img
+        src={user.profile_photo_url}
+        alt={user.name}
+        className="h-8 w-8 rounded-full object-cover ring-2 ring-white"
+        title={user.name}
+      />
+    );
+  };
+
+  const CollaboratorAvatars = ({ collaborators, creator }) => {
+    if (!creator) return null;
+    const otherCollaborators = collaborators.filter(c => c.id !== creator.id);
+
+    if (otherCollaborators.length === 0) {
+      return (
+        <div className="flex items-center">
+          <Avatar user={creator} />
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex items-center -space-x-2">
+        {otherCollaborators.slice(0, 3).map(user => (
+          <Avatar key={user.id} user={user} />
+        ))}
+        {otherCollaborators.length > 3 && (
+          <div className="h-8 w-8 rounded-full bg-gray-500 flex items-center justify-center text-xs font-bold text-white ring-2 ring-white">
+            +{otherCollaborators.length - 3}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -76,6 +108,7 @@ const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kolaborator</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dibuat Oleh</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dibuat Pada</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jatuh Tempo</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
             </tr>
@@ -87,6 +120,7 @@ const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
                 <td className="px-6 py-4 whitespace-nowrap"><StatusBadge status={task.status} /></td>
                 <td className="px-6 py-4 whitespace-nowrap"><CollaboratorAvatars collaborators={task.collaborators} creator={task.user} /></td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{task.user?.name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(task.created_at)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{formatDate(task.due_date)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"><ActionButtons task={task} currentUser={currentUser} /></td>
               </tr>
@@ -102,6 +136,7 @@ const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
             <div className="border-t pt-3 text-sm text-gray-500 space-y-1">
               <div className="flex items-center gap-2"><strong>Kolaborator:</strong> <CollaboratorAvatars collaborators={task.collaborators} creator={task.user} /></div>
               <p><strong>Dibuat Oleh:</strong> {task.user?.name}</p>
+              <p><strong>Dibuat Pada:</strong> {formatDate(task.created_at)}</p>
               <p><strong>Jatuh Tempo:</strong> {formatDate(task.due_date)}</p>
             </div>
             <div className="flex justify-end pt-2"><ActionButtons task={task} currentUser={currentUser} /></div>

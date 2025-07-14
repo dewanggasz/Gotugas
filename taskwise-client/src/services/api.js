@@ -31,16 +31,18 @@ export const createTask = (taskData) => apiClient.post('/v1/tasks', taskData);
 export const updateTask = (id, taskData) => apiClient.put(`/v1/tasks/${id}`, taskData);
 export const deleteTask = (id) => apiClient.delete(`/v1/tasks/${id}`);
 export const postTaskUpdate = (taskId, data) => apiClient.post(`/v1/tasks/${taskId}/updates`, data);
-
-// --- FUNGSI BARU UNTUK FOTO PROFIL ---
 export const uploadProfilePhoto = (photoFile) => {
     const formData = new FormData();
     formData.append('photo', photoFile);
-
-    // Kirim request dengan header 'multipart/form-data'
     return apiClient.post('/v1/user/photo', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
+        headers: { 'Content-Type': 'multipart/form-data' },
     });
+};
+
+// --- FUNGSI BARU UNTUK UPDATE PROFIL & PASSWORD ---
+export const updateProfileInfo = (profileData) => {
+    return apiClient.put('/v1/user/profile', profileData);
+};
+export const updatePassword = (passwordData) => {
+    return apiClient.put('/v1/user/password', passwordData);
 };

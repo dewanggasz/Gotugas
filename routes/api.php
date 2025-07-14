@@ -22,7 +22,11 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::get('tasks/summary', [TaskController::class, 'summary']);
 
     Route::get('tasks/{task}/activities', [TaskController::class, 'activities']);
+    
+     // --- RUTE BARU UNTUK PROFIL ---
     Route::post('user/photo', [ProfileController::class, 'updatePhoto']);
+    Route::put('user/profile', [ProfileController::class, 'updateProfile']);
+    Route::put('user/password', [ProfileController::class, 'updatePassword']);
 
     // Rute resource untuk Task
     Route::apiResource('tasks', TaskController::class);
