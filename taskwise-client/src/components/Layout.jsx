@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Menu, LogOut } from 'lucide-react';
+import { Menu, LogOut, User } from 'lucide-react'; // 1. Import ikon User
 
 export default function Layout({ activePage, setActivePage, onLogout, currentUser, children }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -52,14 +52,22 @@ export default function Layout({ activePage, setActivePage, onLogout, currentUse
               </nav>
               
               <div className="relative" ref={profileRef}>
-                <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100">
-                  <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-sm font-bold text-white">
-                    {currentUser?.name.charAt(0)}
-                  </div>
-                  <span className="text-sm font-medium text-gray-700">{currentUser?.name}</span>
+                <button onClick={() => setIsProfileOpen(!isProfileOpen)} className="flex items-center space-x-2 p-1 rounded-full hover:bg-gray-100">
+                  <img src={currentUser.profile_photo_url} alt="Avatar" className="h-8 w-8 rounded-full object-cover" />
                 </button>
                 {isProfileOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                    {/* 2. Tambahkan tombol Pengaturan Profil */}
+                    <button
+                      onClick={() => {
+                        setActivePage('profile');
+                        setIsProfileOpen(false);
+                      }}
+                      className="w-full text-left flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      <User className="w-4 h-4 mr-2" />
+                      Pengaturan Profil
+                    </button>
                     <button
                       onClick={onLogout}
                       className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
@@ -85,9 +93,7 @@ export default function Layout({ activePage, setActivePage, onLogout, currentUse
         <div className={`fixed inset-0 bg-black transition-opacity ${isMenuOpen ? 'opacity-50' : 'opacity-0 pointer-events-none'}`} onClick={() => setIsMenuOpen(false)}></div>
         <div className="relative w-64 h-full bg-white shadow-lg p-4 flex flex-col">
           <div className="flex items-center space-x-3 mb-8 border-b pb-4">
-            <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-lg font-bold text-white">
-              {currentUser?.name.charAt(0)}
-            </div>
+            <img src={currentUser.profile_photo_url} alt="Avatar" className="h-10 w-10 rounded-full object-cover" />
             <div>
               <p className="font-semibold text-gray-800">{currentUser?.name}</p>
               <p className="text-xs text-gray-500">{currentUser?.email}</p>
@@ -96,6 +102,7 @@ export default function Layout({ activePage, setActivePage, onLogout, currentUse
           <nav className="flex flex-col space-y-2">
             <NavLink pageName="statistics" isMobile={true}>Statistik</NavLink>
             <NavLink pageName="tasks" isMobile={true}>Tugas</NavLink>
+            <NavLink pageName="profile" isMobile={true}>Pengaturan Profil</NavLink>
           </nav>
           <div className="mt-auto">
             <button

@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            //
+            // Tambahkan kolom baru setelah kolom 'password'
+            $table->string('profile_photo_path', 2048)->nullable()->after('password');
         });
     }
 
@@ -22,7 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            //
+            // Hapus kolom jika migrasi di-rollback
+            $table->dropColumn('profile_photo_path');
         });
     }
 };

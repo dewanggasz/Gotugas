@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import LoginPage from './pages/LoginPage';
 import Layout from './components/Layout';
 import StatisticsPage from './pages/StatisticsPage';
 import TasksPage from './pages/TasksPage';
+import ProfilePage from './pages/ProfilePage'; // 1. Import halaman baru
 import { getUser } from './services/api';
 
 function App() {
@@ -11,29 +12,32 @@ function App() {
   
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [userRefetchTrigger, setUserRefetchTrigger] = useState(0); // State untuk memicu refresh
 
   useEffect(() => {
     localStorage.setItem('activePage', activePage);
   }, [activePage]);
 
-  useEffect(() => {
+  // 2. Gunakan useCallback agar fungsi tidak dibuat ulang di setiap render
+  const fetchCurrentUser = useCallback(async () => {
     if (token) {
-      const fetchCurrentUser = async () => {
-        try {
-          const response = await getUser();
-          setCurrentUser(response.data);
-        } catch (error) {
-          console.error("Token tidak valid, logout...", error);
-          handleLogout();
-        } finally {
-          setAuthLoading(false);
-        }
-      };
-      fetchCurrentUser();
+      try {
+        const response = await getUser();
+        setCurrentUser(response.data);
+      } catch (error) {
+        console.error("Token tidak valid, logout...", error);
+        handleLogout();
+      } finally {
+        setAuthLoading(false);
+      }
     } else {
       setAuthLoading(false);
     }
   }, [token]);
+
+  useEffect(() => {
+    fetchCurrentUser();
+  }, [token, userRefetchTrigger, fetchCurrentUser]); // Tambahkan trigger ke dependensi
 
   const handleLoginSuccess = (newToken) => {
     localStorage.setItem('authToken', newToken);
@@ -46,6 +50,11 @@ function App() {
     localStorage.removeItem('activePage');
     setToken(null);
     setCurrentUser(null);
+  };
+
+  // 3. Fungsi yang akan dipanggil dari ProfilePage setelah sukses upload
+  const handleProfileUpdate = () => {
+    setUserRefetchTrigger(c => c + 1);
   };
 
   if (authLoading) {
@@ -68,7 +77,9 @@ function App() {
       currentUser={currentUser}
     >
       {activePage === 'statistics' && <StatisticsPage />}
-      {activePage === 'tasks' && <TasksPage currentUser={currentUser} />} 
+      {activePage === 'tasks' && <TasksPage currentUser={currentUser} />}
+      {/* 4. Tampilkan halaman profil jika aktif */}
+      {activePage === 'profile' && <ProfilePage currentUser={currentUser} onUpdateSuccess={handleProfileUpdate} />}
     </Layout>
   );
 }

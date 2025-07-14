@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
+use App\Http\Controllers\Api\V1\ProfileController;
 
 // Grup rute dengan prefix v1 dan middleware sanctum untuk otentikasi
 Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
@@ -21,6 +22,7 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::get('tasks/summary', [TaskController::class, 'summary']);
 
     Route::get('tasks/{task}/activities', [TaskController::class, 'activities']);
+    Route::post('user/photo', [ProfileController::class, 'updatePhoto']);
 
     // Rute resource untuk Task
     Route::apiResource('tasks', TaskController::class);
