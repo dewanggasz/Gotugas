@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Task extends Model
 {
@@ -12,12 +13,9 @@ class Task extends Model
 
     /**
      * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
      */
     protected $fillable = [
         'user_id',
-        'assigned_to_id', // <-- Tambahkan ini
         'title',
         'description',
         'status',
@@ -26,16 +24,20 @@ class Task extends Model
 
     /**
      * The attributes that should be cast.
-     *
-     * @var array<string, string>
      */
     protected $casts = [
         'due_date' => 'date',
         'status' => 'string',
     ];
 
+    public function activities()
+    {
+        // Urutkan dari yang terbaru
+        return $this->hasMany(TaskActivity::class)->latest();
+    }
+
     /**
-     * Mendefinisikan relasi "belongs-to" ke model User (pembuat tugas).
+     * Relasi untuk mendapatkan user yang MEMBUAT tugas.
      */
     public function user(): BelongsTo
     {
@@ -43,10 +45,11 @@ class Task extends Model
     }
 
     /**
-     * Mendefinisikan relasi "belongs-to" ke model User (yang ditugaskan).
+     * Relasi Many-to-Many baru untuk mendapatkan semua kolaborator.
      */
-    public function assignee(): BelongsTo
+    public function collaborators(): BelongsToMany
     {
-        return $this->belongsTo(User::class, 'assigned_to_id');
+        return $this->belongsToMany(User::class, 'task_user')
+                    ->withPivot('permission'); // Hapus ->withTimestamps()
     }
 }

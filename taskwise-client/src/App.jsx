@@ -3,44 +3,72 @@ import LoginPage from './pages/LoginPage';
 import Layout from './components/Layout';
 import StatisticsPage from './pages/StatisticsPage';
 import TasksPage from './pages/TasksPage';
+import { getUser } from './services/api';
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('authToken'));
+  const [activePage, setActivePage] = useState(localStorage.getItem('activePage') || 'statistics');
   
-  // Baca halaman terakhir dari localStorage, jika tidak ada, default ke 'statistics'
-  const [activePage, setActivePage] = useState(
-    localStorage.getItem('activePage') || 'statistics'
-  );
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  // Simpan halaman aktif ke localStorage setiap kali berubah
   useEffect(() => {
     localStorage.setItem('activePage', activePage);
   }, [activePage]);
 
+  useEffect(() => {
+    if (token) {
+      const fetchCurrentUser = async () => {
+        try {
+          const response = await getUser();
+          setCurrentUser(response.data);
+        } catch (error) {
+          console.error("Token tidak valid, logout...", error);
+          handleLogout();
+        } finally {
+          setAuthLoading(false);
+        }
+      };
+      fetchCurrentUser();
+    } else {
+      setAuthLoading(false);
+    }
+  }, [token]);
+
   const handleLoginSuccess = (newToken) => {
     localStorage.setItem('authToken', newToken);
     setToken(newToken);
-    // Setelah login, arahkan ke halaman statistik
-    setActivePage('statistics'); 
+    setActivePage('statistics');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('authToken');
-    localStorage.removeItem('activePage'); // Hapus juga state halaman
+    localStorage.removeItem('activePage');
     setToken(null);
+    setCurrentUser(null);
   };
 
-  // Jika tidak ada token, tampilkan halaman login
-  if (!token) {
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p>Memuat...</p>
+      </div>
+    );
+  }
+
+  if (!token || !currentUser) {
     return <LoginPage onLoginSuccess={handleLoginSuccess} />;
   }
 
-  // Jika ada token, tampilkan layout utama
   return (
-    <Layout activePage={activePage} setActivePage={setActivePage} onLogout={handleLogout}>
-      {/* Tampilkan konten halaman berdasarkan state activePage */}
+    <Layout 
+      activePage={activePage} 
+      setActivePage={setActivePage} 
+      onLogout={handleLogout}
+      currentUser={currentUser}
+    >
       {activePage === 'statistics' && <StatisticsPage />}
-      {activePage === 'tasks' && <TasksPage />}
+      {activePage === 'tasks' && <TasksPage currentUser={currentUser} />} 
     </Layout>
   );
 }

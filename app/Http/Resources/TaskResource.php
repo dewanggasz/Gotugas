@@ -2,7 +2,6 @@
 
 namespace App\Http\Resources;
 
-// Ganti import ini untuk menunjuk ke UserResource yang benar
 use App\Http\Resources\Api\V1\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -25,10 +24,20 @@ class TaskResource extends JsonResource
             'created_at' => $this->created_at->toDateTimeString(),
             'updated_at' => $this->updated_at->toDateTimeString(),
             
-            // Sertakan data pembuat (user) dan yang ditugaskan (assignee)
-            // whenLoaded() memastikan data hanya disertakan jika sudah dimuat (eager loaded)
+            // Sertakan data pembuat (user)
             'user' => UserResource::make($this->whenLoaded('user')),
-            'assignee' => UserResource::make($this->whenLoaded('assignee')),
+            
+            // Sertakan daftar kolaborator beserta izin mereka
+            'collaborators' => $this->whenLoaded('collaborators', function () {
+                return $this->collaborators->map(function ($user) {
+                    return [
+                        'id' => $user->id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'permission' => $user->pivot->permission, // Ambil data izin dari tabel pivot
+                    ];
+                });
+            }),
         ];
     }
 }

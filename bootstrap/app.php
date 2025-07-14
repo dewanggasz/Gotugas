@@ -30,6 +30,7 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withProviders([
         \App\Providers\AuthServiceProvider::class,
+        \App\Providers\EventServiceProvider::class,
     ])
     ->withExceptions(function (Exceptions $exceptions) {
         //

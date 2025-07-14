@@ -15,7 +15,7 @@ export default function StatisticsPage() {
         const response = await getSummary();
         setSummary(response.data);
       } catch (err) {
-        setError('Failed to load summary data.');
+        setError('Gagal memuat data ringkasan.');
         console.error(err);
       } finally {
         setIsLoading(false);
@@ -24,18 +24,18 @@ export default function StatisticsPage() {
     fetchSummary();
   }, []);
 
-  if (isLoading) return <p>Loading statistics...</p>;
+  if (isLoading) return <p>Memuat statistik...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">Monthly Summary</h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-8">Ringkasan Bulanan</h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-        <SummaryCard title="Created This Month" value={summary.created_this_month} icon="📝" />
-        <SummaryCard title="Completed This Month" value={summary.completed_this_month} icon="✅" />
-        <SummaryCard title="In Progress" value={summary.in_progress} icon="⏳" />
-        <SummaryCard title="Cancelled" value={summary.cancelled} icon="❌" />
-        <SummaryCard title="Overdue" value={summary.overdue} icon="🔥" />
+        <SummaryCard title="Dibuat Bulan Ini" value={summary.created_this_month} icon="created" />
+        <SummaryCard title="Selesai Bulan Ini" value={summary.completed_this_month} icon="completed" />
+        <SummaryCard title="Sedang Dikerjakan" value={summary.in_progress} icon="in_progress" />
+        <SummaryCard title="Dibatalkan" value={summary.cancelled} icon="cancelled" />
+        <SummaryCard title="Lewat Batas Waktu" value={summary.overdue} icon="overdue" />
       </div>
     </div>
   );

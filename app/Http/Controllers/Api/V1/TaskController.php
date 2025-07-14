@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\TaskResource;
+use App\Http\Resources\Api\V1\TaskActivityResource;
 use App\Models\Task;
+use App\Models\TaskActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
@@ -22,14 +24,14 @@ class TaskController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        // Muat relasi untuk efisiensi query
-        $query = Task::with(['user', 'assignee']);
+        $query = Task::with(['user', 'collaborators']);
 
         if (!$user->isAdmin()) {
-            // Tampilkan tugas yang dibuat oleh user ATAU ditugaskan kepada user
             $query->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
-                  ->orWhere('assigned_to_id', $user->id);
+                  ->orWhereHas('collaborators', function ($subQ) use ($user) {
+                      $subQ->where('users.id', $user->id);
+                  });
             });
         }
 
@@ -61,33 +63,21 @@ class TaskController extends Controller
         /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // Query dasar untuk tugas milik pengguna (atau semua tugas jika admin)
         $tasksQuery = Task::query();
         if (!$user->isAdmin()) {
-            $tasksQuery->where('user_id', $user->id);
+            $tasksQuery->where(function ($q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhereHas('collaborators', function ($subQ) use ($user) {
+                      $subQ->where('users.id', $user->id);
+                  });
+            });
         }
 
-        // Hitung statistik
-        $createdThisMonth = (clone $tasksQuery)
-            ->whereYear('created_at', Carbon::now()->year)
-            ->whereMonth('created_at', Carbon::now()->month)
-            ->count();
-
-        $completedThisMonth = (clone $tasksQuery)
-            ->where('status', 'completed')
-            ->whereYear('updated_at', Carbon::now()->year)
-            ->whereMonth('updated_at', Carbon::now()->month)
-            ->count();
-
+        $createdThisMonth = (clone $tasksQuery)->whereYear('created_at', Carbon::now()->year)->whereMonth('created_at', Carbon::now()->month)->count();
+        $completedThisMonth = (clone $tasksQuery)->where('status', 'completed')->whereYear('updated_at', Carbon::now()->year)->whereMonth('updated_at', Carbon::now()->month)->count();
         $inProgress = (clone $tasksQuery)->where('status', 'in_progress')->count();
-
         $cancelled = (clone $tasksQuery)->where('status', 'cancelled')->count();
-
-        $overdue = (clone $tasksQuery)
-            ->where('status', '!=', 'completed')
-            ->whereNotNull('due_date')
-            ->whereDate('due_date', '<', Carbon::now())
-            ->count();
+        $overdue = (clone $tasksQuery)->where('status', '!=', 'completed')->whereNotNull('due_date')->whereDate('due_date', '<', Carbon::now())->count();
 
         return response()->json([
             'created_this_month' => $createdThisMonth,
@@ -110,14 +100,21 @@ class TaskController extends Controller
             'description' => 'nullable|string',
             'status' => ['required', Rule::in(['not_started', 'in_progress', 'completed', 'cancelled'])],
             'due_date' => 'nullable|date',
-            'assigned_to_id' => 'nullable|exists:users,id', // Validasi input baru
+            'collaborators' => 'present|array',
+            'collaborators.*.user_id' => 'required|exists:users,id',
+            'collaborators.*.permission' => ['required', Rule::in(['edit', 'view'])],
         ]);
         
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $task = $user->tasks()->create($validated);
+        $task = $user->createdTasks()->create($validated);
 
-        return new TaskResource($task->load(['user', 'assignee']));
+        $collaboratorsData = collect($validated['collaborators'])->keyBy('user_id');
+        $collaboratorsData[$user->id] = ['user_id' => $user->id, 'permission' => 'edit'];
+        $syncData = $collaboratorsData->mapWithKeys(fn($item) => [$item['user_id'] => ['permission' => $item['permission']]])->all();
+        $task->collaborators()->sync($syncData);
+
+        return new TaskResource($task->load(['user', 'collaborators']));
     }
 
     /**
@@ -126,7 +123,7 @@ class TaskController extends Controller
     public function show(Task $task)
     {
         $this->authorize('view', $task);
-        return new TaskResource($task->load(['user', 'assignee']));
+        return new TaskResource($task->load(['user', 'collaborators']));
     }
 
     /**
@@ -141,12 +138,31 @@ class TaskController extends Controller
             'description' => 'nullable|string',
             'status' => ['sometimes', 'required', Rule::in(['not_started', 'in_progress', 'completed', 'cancelled'])],
             'due_date' => 'nullable|date',
-            'assigned_to_id' => 'nullable|sometimes|exists:users,id', // Validasi input baru
+            'collaborators' => 'sometimes|present|array',
+            'collaborators.*.user_id' => 'required|exists:users,id',
+            'collaborators.*.permission' => ['required', Rule::in(['edit', 'view'])],
+            'update_message' => 'nullable|string|max:1000',
         ]);
 
         $task->update($validated);
 
-        return new TaskResource($task->load(['user', 'assignee']));
+        if ($request->has('collaborators')) {
+            $user = $task->user;
+            $collaboratorsData = collect($validated['collaborators'])->keyBy('user_id');
+            $collaboratorsData[$user->id] = ['user_id' => $user->id, 'permission' => 'edit'];
+            $syncData = $collaboratorsData->mapWithKeys(fn($item) => [$item['user_id'] => ['permission' => $item['permission']]])->all();
+            $task->collaborators()->sync($syncData);
+        }
+
+        if ($request->filled('update_message')) {
+            TaskActivity::create([
+                'task_id' => $task->id,
+                'user_id' => Auth::id(),
+                'description' => "memberikan pembaruan: \"{$request->update_message}\"",
+            ]);
+        }
+
+        return new TaskResource($task->load(['user', 'collaborators']));
     }
 
     /**
@@ -157,5 +173,15 @@ class TaskController extends Controller
         $this->authorize('delete', $task);
         $task->delete();
         return response()->noContent();
+    }
+
+    /**
+     * Display a listing of the task's activities.
+     */
+    public function activities(Task $task)
+    {
+        $this->authorize('view', $task);
+        $activities = $task->activities()->with('user')->paginate(15);
+        return TaskActivityResource::collection($activities);
     }
 }

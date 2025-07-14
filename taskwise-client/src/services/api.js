@@ -35,6 +35,9 @@ export const getSummary = () => apiClient.get('/v1/tasks/summary');
 // Fungsi untuk mendapatkan semua tugas (dengan filter)
 export const getTasks = (params) => apiClient.get('/v1/tasks', { params });
 
+// Fungsi untuk mendapatkan riwayat aktivitas sebuah tugas
+export const getTaskActivities = (taskId) => apiClient.get(`/v1/tasks/${taskId}/activities`);
+
 // Fungsi untuk membuat tugas baru
 export const createTask = (taskData) => apiClient.post('/v1/tasks', taskData);
 
@@ -43,3 +46,8 @@ export const updateTask = (id, taskData) => apiClient.put(`/v1/tasks/${id}`, tas
 
 // Fungsi untuk menghapus tugas
 export const deleteTask = (id) => apiClient.delete(`/v1/tasks/${id}`);
+
+// Fungsi untuk mengirim pembaruan/komentar ke sebuah tugas
+export const postTaskUpdate = (taskId, data) => {
+    return apiClient.post(`/v1/tasks/${taskId}/updates`, data);
+};
