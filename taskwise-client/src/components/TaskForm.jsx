@@ -20,13 +20,13 @@ const AttachmentItem = ({ attachment, onDelete }) => {
         </a>
       </div>
     <button
-      type="button"
-      data-ignore-close
-      onClick={() => onDelete(attachment.id)}
-      className="text-red-500 hover:text-red-700 p-1 flex-shrink-0"
-    >
-      <Trash2 className="w-4 h-4 data-ignore-close" />
-    </button>
+    type="button"
+    data-ignore-close
+    onClick={() => onDelete(attachment.id)}
+    className="text-red-500 hover:text-red-700 p-1 flex-shrink-0"
+  >
+    <Trash2 className="w-4 h-4 data-ignore-close" />
+  </button>
     </div>
   );
 };
