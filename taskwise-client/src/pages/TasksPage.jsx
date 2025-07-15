@@ -27,7 +27,6 @@ function useDebounce(value, delay) {
   return debouncedValue;
 }
 
-// --- Komponen TaskDisplay Diperbarui ---
 const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -42,58 +41,26 @@ const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
     const canDelete = task.user?.id === currentUser?.id;
     return (
       <div className="flex items-center space-x-2">
-        <button onClick={() => onView(task)} className="text-green-600 hover:text-green-900" title="Lihat Riwayat">
-          <Eye className="h-5 w-5" />
-        </button>
-        {canModify && (
-          <button onClick={() => onEdit(task)} className="text-blue-600 hover:text-blue-900" title="Edit">
-            <Pencil className="h-5 w-5" />
-          </button>
-        )}
-        {canDelete && (
-          <button onClick={() => onDelete(task.id)} className="text-red-600 hover:text-red-900" title="Hapus">
-            <Trash2 className="h-5 w-5" />
-          </button>
-        )}
+        <button onClick={() => onView(task)} className="text-green-600 hover:text-green-900" title="Lihat Riwayat"><Eye className="h-5 w-5" /></button>
+        {canModify && (<button onClick={() => onEdit(task)} className="text-blue-600 hover:text-blue-900" title="Edit"><Pencil className="h-5 w-5" /></button>)}
+        {canDelete && (<button onClick={() => onDelete(task.id)} className="text-red-600 hover:text-red-900" title="Hapus"><Trash2 className="h-5 w-5" /></button>)}
       </div>
     );
   };
-  
-  // Komponen Avatar baru yang lebih cerdas
   const Avatar = ({ user }) => {
     if (!user) return null;
-    return (
-      <img
-        src={user.profile_photo_url}
-        alt={user.name}
-        className="h-8 w-8 rounded-full object-cover ring-2 ring-white"
-        title={user.name}
-      />
-    );
+    return (<img src={user.profile_photo_url} alt={user.name} className="h-8 w-8 rounded-full object-cover ring-2 ring-white" title={user.name} />);
   };
-
   const CollaboratorAvatars = ({ collaborators, creator }) => {
     if (!creator) return null;
     const otherCollaborators = collaborators.filter(c => c.id !== creator.id);
-
     if (otherCollaborators.length === 0) {
-      return (
-        <div className="flex items-center">
-          <Avatar user={creator} />
-        </div>
-      );
+      return (<div className="flex items-center"><Avatar user={creator} /></div>);
     }
-
     return (
       <div className="flex items-center -space-x-2">
-        {otherCollaborators.slice(0, 3).map(user => (
-          <Avatar key={user.id} user={user} />
-        ))}
-        {otherCollaborators.length > 3 && (
-          <div className="h-8 w-8 rounded-full bg-gray-500 flex items-center justify-center text-xs font-bold text-white ring-2 ring-white">
-            +{otherCollaborators.length - 3}
-          </div>
-        )}
+        {otherCollaborators.slice(0, 3).map(user => (<Avatar key={user.id} user={user} />))}
+        {otherCollaborators.length > 3 && (<div className="h-8 w-8 rounded-full bg-gray-500 flex items-center justify-center text-xs font-bold text-white ring-2 ring-white">+{otherCollaborators.length - 3}</div>)}
       </div>
     );
   };
@@ -170,13 +137,7 @@ export default function TasksPage({ currentUser }) {
 
   useEffect(() => {
     const fetchAllUsers = async () => {
-      try {
-        const usersResponse = await getUsers(); 
-        setUsers(usersResponse.data.data);
-      } catch (err) { 
-        console.error("Gagal memuat daftar pengguna", err); 
-        setError("Gagal memuat daftar pengguna."); 
-      }
+      try { const usersResponse = await getUsers(); setUsers(usersResponse.data.data); } catch (err) { console.error("Gagal memuat daftar pengguna", err); setError("Gagal memuat daftar pengguna."); }
     };
     fetchAllUsers();
   }, []);
@@ -192,6 +153,19 @@ export default function TasksPage({ currentUser }) {
     };
     if (currentUser) { fetchTasks(); }
   }, [statusFilter, sortBy, currentPage, debouncedSearchTerm, currentUser, forceRefetch]);
+
+  // --- PERBAIKAN: Effect untuk menyinkronkan data di modal ---
+  useEffect(() => {
+    // Jika modal edit terbuka, cari versi terbaru dari tugas yang sedang diedit
+    if (isEditModalOpen && editingTask) {
+      const updatedTaskInList = tasks.find(t => t.id === editingTask.id);
+      if (updatedTaskInList) {
+        // Jika ditemukan, perbarui state editingTask agar modal menampilkan data terbaru
+        setEditingTask(updatedTaskInList);
+      }
+    }
+  }, [tasks, isEditModalOpen, editingTask]);
+  // -----------------------------------------------------------
 
   const handleFilterChange = (e) => { setStatusFilter(e.target.value); setCurrentPage(1); };
   const handleSortChange = (e) => { setSortBy(e.target.value); setCurrentPage(1); };
@@ -261,7 +235,8 @@ export default function TasksPage({ currentUser }) {
               onCancel={handleCloseEditModal} 
               task={editingTask} 
               users={users} 
-              currentUser={currentUser} 
+              currentUser={currentUser}
+              onAttachmentUpdate={refreshTasks}
             />
           </div>
         </Modal>

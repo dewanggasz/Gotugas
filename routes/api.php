@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\V1\StatisticsController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\TaskAttachmentController;
 use Illuminate\Validation\ValidationException;
 
 /*
@@ -64,6 +65,9 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::get('tasks/{task}/activities', [TaskController::class, 'activities']);
     Route::post('tasks/{task}/updates', [TaskController::class, 'postUpdate']); // Pastikan ini ada jika Anda menggunakannya
     Route::apiResource('tasks', TaskController::class);
+
+    Route::post('tasks/{task}/attachments', [TaskAttachmentController::class, 'store']);
+    Route::delete('attachments/{attachment}', [TaskAttachmentController::class, 'destroy']);
 
     // Rute Logout
     Route::post('/logout', function (Request $request) {

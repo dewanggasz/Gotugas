@@ -24,7 +24,8 @@ class TaskController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        $query = Task::with(['user', 'collaborators']);
+        // Eager load attachments along with other relations
+        $query = Task::with(['user', 'collaborators', 'attachments']);
 
         if (!$user->isAdmin()) {
             $query->where(function ($q) use ($user) {
@@ -114,7 +115,7 @@ class TaskController extends Controller
         $syncData = $collaboratorsData->mapWithKeys(fn($item) => [$item['user_id'] => ['permission' => $item['permission']]])->all();
         $task->collaborators()->sync($syncData);
 
-        return new TaskResource($task->load(['user', 'collaborators']));
+        return new TaskResource($task->load(['user', 'collaborators', 'attachments']));
     }
 
     /**
@@ -123,7 +124,7 @@ class TaskController extends Controller
     public function show(Task $task)
     {
         $this->authorize('view', $task);
-        return new TaskResource($task->load(['user', 'collaborators']));
+        return new TaskResource($task->load(['user', 'collaborators', 'attachments']));
     }
 
     /**
@@ -162,7 +163,7 @@ class TaskController extends Controller
             ]);
         }
 
-        return new TaskResource($task->load(['user', 'collaborators']));
+        return new TaskResource($task->load(['user', 'collaborators', 'attachments']));
     }
 
     /**
@@ -183,5 +184,24 @@ class TaskController extends Controller
         $this->authorize('view', $task);
         $activities = $task->activities()->with('user')->paginate(15);
         return TaskActivityResource::collection($activities);
+    }
+    
+    /**
+     * Handle posting a text update to a task.
+     */
+    public function postUpdate(Request $request, Task $task)
+    {
+        $this->authorize('update', $task);
+
+        $validated = $request->validate([
+            'message' => 'required|string|max:1000',
+        ]);
+
+        $task->activities()->create([
+            'user_id' => Auth::id(),
+            'description' => "memberikan pembaruan: \"{$validated['message']}\"",
+        ]);
+
+        return response()->json(['message' => 'Pembaruan berhasil diposting.'], 201);
     }
 }

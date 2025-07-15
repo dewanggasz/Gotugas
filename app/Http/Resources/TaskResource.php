@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Http\Resources\Api\V1\UserResource;
+use App\Http\Resources\Api\V1\TaskAttachmentResource; // <-- Tambahkan baris ini
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,10 +25,8 @@ class TaskResource extends JsonResource
             'created_at' => $this->created_at->toDateTimeString(),
             'updated_at' => $this->updated_at->toDateTimeString(),
             
-            // Sertakan data pembuat (user)
             'user' => UserResource::make($this->whenLoaded('user')),
             
-            // Sertakan daftar kolaborator beserta izin dan URL foto mereka
             'collaborators' => $this->whenLoaded('collaborators', function () {
                 return $this->collaborators->map(function ($user) {
                     return [
@@ -35,10 +34,13 @@ class TaskResource extends JsonResource
                         'name' => $user->name,
                         'email' => $user->email,
                         'permission' => $user->pivot->permission,
-                        'profile_photo_url' => $user->profile_photo_url, // <-- Perbaikan ada di sini
+                        'profile_photo_url' => $user->profile_photo_url,
                     ];
                 });
             }),
+
+            // Sertakan data lampiran
+            'attachments' => TaskAttachmentResource::collection($this->whenLoaded('attachments')),
         ];
     }
 }
