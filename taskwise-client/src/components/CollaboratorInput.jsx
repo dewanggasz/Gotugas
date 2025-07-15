@@ -14,6 +14,7 @@ export default function CollaboratorInput({ allUsers = [], collaborators = [], s
 
   // Fungsi untuk menambahkan kolaborator baru
   const addCollaborator = (user) => {
+    // Default izin adalah 'view'
     setCollaborators([...collaborators, { user_id: user.id, name: user.name, permission: 'view' }]);
     setSearchTerm('');
     setIsDropdownOpen(false);
@@ -46,20 +47,21 @@ export default function CollaboratorInput({ allUsers = [], collaborators = [], s
 
   return (
     <div ref={wrapperRef}>
-      <label className="block text-gray-700 mb-2">Collaborators</label>
+      <label className="block text-gray-700 mb-2">Kolaborator</label>
       {/* Daftar kolaborator yang sudah ditambahkan */}
       <div className="flex flex-wrap gap-2 mb-2 p-2 border rounded-lg bg-gray-50 min-h-[40px]">
         {collaborators.map(collab => (
           <div key={collab.user_id} className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex items-center gap-2 text-sm">
             <span>{collab.name}</span>
-            {/* Dropdown untuk izin */}
+            {/* Dropdown untuk izin dengan opsi baru */}
             <select
               value={collab.permission}
               onChange={(e) => updatePermission(collab.user_id, e.target.value)}
               className="bg-transparent border-none focus:ring-0 text-blue-800 text-xs"
             >
-              <option value="view">Can View</option>
-              <option value="edit">Can Edit</option>
+              <option value="view">Bisa Lihat</option>
+              <option value="comment">Bisa Komentar</option>
+              <option value="edit">Bisa Edit</option>
             </select>
             <button type="button" onClick={() => removeCollaborator(collab.user_id)} className="font-bold">×</button>
           </div>
@@ -76,7 +78,7 @@ export default function CollaboratorInput({ allUsers = [], collaborators = [], s
             setIsDropdownOpen(true);
           }}
           onFocus={() => setIsDropdownOpen(true)}
-          placeholder="Add collaborators by name..."
+          placeholder="Tambah kolaborator berdasarkan nama..."
           className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
         {isDropdownOpen && filteredUsers.length > 0 && (

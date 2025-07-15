@@ -23,6 +23,8 @@ class TaskCommentResource extends JsonResource
                 'name' => $this->user->name,
                 'profile_photo_url' => $this->user->profile_photo_url,
             ],
+            // --- PERBAIKAN: Sertakan balasan yang sudah diformat ---
+            'replies' => TaskCommentResource::collection($this->whenLoaded('replies')),
         ];
     }
 }

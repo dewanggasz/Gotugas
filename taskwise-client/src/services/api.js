@@ -66,7 +66,7 @@ export const getTaskComments = (taskId) => {
     return apiClient.get(`/v1/tasks/${taskId}/comments`);
 };
 
-// Fungsi untuk mengirim komentar baru ke sebuah tugas
+// Fungsi untuk mengirim komentar baru ke sebuah tugas (bisa juga untuk balasan)
 export const postTaskComment = (taskId, commentData) => {
     return apiClient.post(`/v1/tasks/${taskId}/comments`, commentData);
 };

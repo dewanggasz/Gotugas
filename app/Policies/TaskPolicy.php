@@ -21,16 +21,7 @@ class TaskPolicy
     }
 
     /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
-    {
-        return true;
-    }
-
-    /**
      * Determine whether the user can view the model.
-     * User bisa melihat tugas jika dia pembuatnya ATAU terdaftar sebagai kolaborator.
      */
     public function view(User $user, Task $task): bool
     {
@@ -47,11 +38,9 @@ class TaskPolicy
 
     /**
      * Determine whether the user can update the model.
-     * User bisa mengupdate jika dia pembuatnya ATAU kolaborator dengan izin 'edit'.
      */
     public function update(User $user, Task $task): bool
     {
-        // Cek apakah user adalah kolaborator dengan izin 'edit'
         $isEditor = $task->collaborators()
                          ->where('users.id', $user->id)
                          ->wherePivot('permission', 'edit')
@@ -61,8 +50,23 @@ class TaskPolicy
     }
 
     /**
+     * Determine whether the user can comment on the task.
+     * Aturan baru untuk otorisasi komentar.
+     */
+    public function comment(User $user, Task $task): bool
+    {
+        // Cek apakah user adalah kolaborator dengan izin 'edit' atau 'comment'
+        $isAllowedCollaborator = $task->collaborators()
+                         ->where('users.id', $user->id)
+                         ->whereIn('permission', ['edit', 'comment'])
+                         ->exists();
+
+        // User bisa berkomentar jika dia pembuat ATAU kolaborator yang diizinkan
+        return $user->id === $task->user_id || $isAllowedCollaborator;
+    }
+
+    /**
      * Determine whether the user can delete the model.
-     * Hanya pembuat asli yang bisa menghapus tugas.
      */
     public function delete(User $user, Task $task): bool
     {

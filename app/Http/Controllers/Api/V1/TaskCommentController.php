@@ -7,11 +7,11 @@ use App\Http\Resources\Api\V1\TaskCommentResource;
 use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests; // 1. Import trait
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class TaskCommentController extends Controller
 {
-    use AuthorizesRequests; // 2. Gunakan trait
+    use AuthorizesRequests;
 
     /**
      * Mengambil daftar komentar untuk sebuah tugas.
@@ -20,7 +20,13 @@ class TaskCommentController extends Controller
     {
         $this->authorize('view', $task);
 
-        $comments = $task->comments()->with('user')->paginate(10);
+        // --- PERBAIKAN: Eager load balasan secara rekursif ---
+        $comments = $task->comments()
+            ->whereNull('parent_id')
+            ->with(['user', 'replies' => function ($query) {
+                $query->with(['user', 'replies.user']); // Muat balasan dan user pembuatnya
+            }])
+            ->get();
 
         return TaskCommentResource::collection($comments);
     }
@@ -30,27 +36,25 @@ class TaskCommentController extends Controller
      */
     public function store(Request $request, Task $task)
     {
-        /** @var \App\Models\User $user */ // 3. Tambahkan docblock untuk type hinting
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // Otorisasi: Hanya admin yang bisa berkomentar
-        if (!$user->isAdmin()) {
-            abort(403, 'Hanya admin yang dapat menambahkan komentar.');
-        }
+        $this->authorize('comment', $task);
 
         $validated = $request->validate([
             'body' => 'required|string|max:5000',
+            'parent_id' => 'nullable|exists:task_comments,id',
         ]);
 
         $comment = $task->comments()->create([
             'user_id' => $user->id,
             'body' => $validated['body'],
+            'parent_id' => $validated['parent_id'] ?? null,
         ]);
 
-        // Catat aktivitas penambahan komentar
         $task->activities()->create([
             'user_id' => $user->id,
-            'description' => "menambahkan komentar",
+            'description' => $validated['parent_id'] ? "membalas sebuah komentar" : "menambahkan komentar",
         ]);
 
         return new TaskCommentResource($comment->load('user'));

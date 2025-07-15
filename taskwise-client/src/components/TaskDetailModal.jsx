@@ -154,7 +154,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, currentUser }) 
           <hr />
 
           {/* Bagian Komentar */}
-          <CommentSection taskId={task.id} currentUser={currentUser} />
+          <CommentSection taskId={task.id} currentUser={currentUser} task={task} />
 
           <hr />
 

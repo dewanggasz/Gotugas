@@ -24,7 +24,6 @@ class TaskController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
-        // Eager load attachments along with other relations
         $query = Task::with(['user', 'collaborators', 'attachments']);
 
         if (!$user->isAdmin()) {
@@ -103,7 +102,7 @@ class TaskController extends Controller
             'due_date' => 'nullable|date',
             'collaborators' => 'present|array',
             'collaborators.*.user_id' => 'required|exists:users,id',
-            'collaborators.*.permission' => ['required', Rule::in(['edit', 'view'])],
+            'collaborators.*.permission' => ['required', Rule::in(['edit', 'view', 'comment'])],
         ]);
         
         /** @var \App\Models\User $user */
@@ -141,7 +140,7 @@ class TaskController extends Controller
             'due_date' => 'nullable|date',
             'collaborators' => 'sometimes|present|array',
             'collaborators.*.user_id' => 'required|exists:users,id',
-            'collaborators.*.permission' => ['required', Rule::in(['edit', 'view'])],
+            'collaborators.*.permission' => ['required', Rule::in(['edit', 'view', 'comment'])],
             'update_message' => 'nullable|string|max:1000',
         ]);
 

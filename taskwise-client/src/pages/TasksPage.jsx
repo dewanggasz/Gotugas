@@ -5,7 +5,7 @@ import TaskForm from '../components/TaskForm';
 import TaskDetailModal from '../components/TaskDetailModal';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
 
-// (Komponen Pagination, useDebounce, dan TaskDisplay tidak berubah)
+// Komponen untuk kontrol pagination
 const Pagination = ({ meta, onPageChange }) => {
   if (!meta || meta.last_page <= 1) return null;
   return (
@@ -18,6 +18,8 @@ const Pagination = ({ meta, onPageChange }) => {
     </div>
   );
 };
+
+// Hook kustom untuk menunda eksekusi (debounce)
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
@@ -26,15 +28,19 @@ function useDebounce(value, delay) {
   }, [value, delay]);
   return debouncedValue;
 }
+
+// Komponen untuk menampilkan tugas (Tabel di Desktop, Kartu di Mobile)
 const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
     return new Date(dateString).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
   };
+
   const StatusBadge = ({ status }) => {
     const statusStyles = { not_started: 'bg-gray-200 text-gray-800', in_progress: 'bg-blue-200 text-blue-800', completed: 'bg-green-200 text-green-800', cancelled: 'bg-red-200 text-red-800' };
     return <span className={`px-2 py-1 text-xs font-semibold leading-5 rounded-full capitalize ${statusStyles[status] || statusStyles.not_started}`}>{status.replace('_', ' ')}</span>;
   };
+
   const ActionButtons = ({ task }) => {
     const canModify = task.collaborators.some(c => c.id === currentUser?.id && c.permission === 'edit');
     const canDelete = task.user?.id === currentUser?.id;
@@ -46,10 +52,12 @@ const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
       </div>
     );
   };
+
   const Avatar = ({ user }) => {
     if (!user) return null;
     return (<img src={user.profile_photo_url} alt={user.name} className="h-8 w-8 rounded-full object-cover ring-2 ring-white" title={user.name} />);
   };
+
   const CollaboratorAvatars = ({ collaborators, creator }) => {
     if (!creator) return null;
     const otherCollaborators = collaborators.filter(c => c.id !== creator.id);
@@ -153,6 +161,15 @@ export default function TasksPage({ currentUser }) {
     if (currentUser) { fetchTasks(); }
   }, [statusFilter, sortBy, currentPage, debouncedSearchTerm, currentUser, forceRefetch]);
 
+  useEffect(() => {
+    if (isEditModalOpen && editingTask) {
+      const updatedTaskInList = tasks.find(t => t.id === editingTask.id);
+      if (updatedTaskInList) {
+        setEditingTask(updatedTaskInList);
+      }
+    }
+  }, [tasks, isEditModalOpen, editingTask]);
+
   const handleFilterChange = (e) => { setStatusFilter(e.target.value); setCurrentPage(1); };
   const handleSortChange = (e) => { setSortBy(e.target.value); setCurrentPage(1); };
   const handleSearchChange = (e) => { setSearchTerm(e.target.value); setCurrentPage(1); };
@@ -222,7 +239,7 @@ export default function TasksPage({ currentUser }) {
               task={editingTask} 
               users={users} 
               currentUser={currentUser}
-              onAttachmentUpdate={refreshTasks}
+              onTaskUpdate={refreshTasks}
             />
           </div>
         </Modal>
