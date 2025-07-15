@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import ImageLightbox from './ImageLightbox';
+import CommentSection from './CommentSection';
 import { getTaskActivities } from '../services/api';
 import { PlusCircle, RefreshCw, Pencil, FileText, MessageSquare, Pin, Image as ImageIcon, Link as LinkIcon, File as FileIcon, Paperclip } from 'lucide-react';
 
@@ -12,7 +13,6 @@ const AttachmentDisplayItem = ({ attachment, onViewImage }) => {
     return <FileIcon className="w-5 h-5 text-gray-600 flex-shrink-0" />;
   };
 
-  // Jika tipe adalah gambar, gunakan tombol. Jika bukan, gunakan link.
   if (attachment.type === 'image') {
     return (
       <button
@@ -20,9 +20,7 @@ const AttachmentDisplayItem = ({ attachment, onViewImage }) => {
         className="flex w-full items-center gap-3 p-2 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors text-left"
       >
         {getIcon()}
-        <span className="text-sm text-gray-800 truncate" title={attachment.original_name}>
-          {attachment.original_name}
-        </span>
+        <span className="text-sm text-gray-800 truncate" title={attachment.original_name}>{attachment.original_name}</span>
       </button>
     );
   }
@@ -35,13 +33,10 @@ const AttachmentDisplayItem = ({ attachment, onViewImage }) => {
       className="flex items-center gap-3 p-2 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
     >
       {getIcon()}
-      <span className="text-sm text-gray-800 truncate" title={attachment.original_name}>
-        {attachment.original_name}
-      </span>
+      <span className="text-sm text-gray-800 truncate" title={attachment.original_name}>{attachment.original_name}</span>
     </a>
   );
 };
-
 
 // Komponen kecil untuk setiap item di log aktivitas
 const ActivityItem = ({ activity }) => {
@@ -52,6 +47,7 @@ const ActivityItem = ({ activity }) => {
     if (description.includes('deskripsi')) return <FileText className="w-5 h-5 text-yellow-600" />;
     if (description.includes('pembaruan')) return <MessageSquare className="w-5 h-5 text-indigo-600" />;
     if (description.includes('lampiran')) return <Paperclip className="w-5 h-5 text-gray-600" />;
+    if (description.includes('komentar')) return <MessageSquare className="w-5 h-5 text-indigo-600" />;
     return <Pin className="w-5 h-5 text-gray-600" />;
   };
 
@@ -80,7 +76,7 @@ const ActivityItem = ({ activity }) => {
   );
 };
 
-export default function TaskDetailModal({ isOpen, onClose, task }) {
+export default function TaskDetailModal({ isOpen, onClose, task, currentUser }) {
   const [activities, setActivities] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [lightboxImage, setLightboxImage] = useState(null);
@@ -154,6 +150,11 @@ export default function TaskDetailModal({ isOpen, onClose, task }) {
               </div>
             </div>
           )}
+
+          <hr />
+
+          {/* Bagian Komentar */}
+          <CommentSection taskId={task.id} currentUser={currentUser} />
 
           <hr />
 

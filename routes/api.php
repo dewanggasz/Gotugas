@@ -4,10 +4,11 @@ use App\Http\Controllers\Api\V1\TaskController;
 use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\StatisticsController;
+use App\Http\Controllers\Api\V1\TaskCommentController;
+use App\Http\Controllers\Api\V1\TaskAttachmentController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\V1\TaskAttachmentController;
 use Illuminate\Validation\ValidationException;
 
 /*
@@ -68,6 +69,10 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
 
     Route::post('tasks/{task}/attachments', [TaskAttachmentController::class, 'store']);
     Route::delete('attachments/{attachment}', [TaskAttachmentController::class, 'destroy']);
+
+    // --- RUTE BARU UNTUK KOMENTAR ---
+    Route::get('tasks/{task}/comments', [TaskCommentController::class, 'index']);
+    Route::post('tasks/{task}/comments', [TaskCommentController::class, 'store']);
 
     // Rute Logout
     Route::post('/logout', function (Request $request) {

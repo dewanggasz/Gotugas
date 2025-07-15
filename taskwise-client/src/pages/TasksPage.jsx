@@ -5,7 +5,7 @@ import TaskForm from '../components/TaskForm';
 import TaskDetailModal from '../components/TaskDetailModal';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
 
-// (Komponen Pagination dan useDebounce tidak berubah)
+// (Komponen Pagination, useDebounce, dan TaskDisplay tidak berubah)
 const Pagination = ({ meta, onPageChange }) => {
   if (!meta || meta.last_page <= 1) return null;
   return (
@@ -26,7 +26,6 @@ function useDebounce(value, delay) {
   }, [value, delay]);
   return debouncedValue;
 }
-
 const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -154,19 +153,6 @@ export default function TasksPage({ currentUser }) {
     if (currentUser) { fetchTasks(); }
   }, [statusFilter, sortBy, currentPage, debouncedSearchTerm, currentUser, forceRefetch]);
 
-  // --- PERBAIKAN: Effect untuk menyinkronkan data di modal ---
-  useEffect(() => {
-    // Jika modal edit terbuka, cari versi terbaru dari tugas yang sedang diedit
-    if (isEditModalOpen && editingTask) {
-      const updatedTaskInList = tasks.find(t => t.id === editingTask.id);
-      if (updatedTaskInList) {
-        // Jika ditemukan, perbarui state editingTask agar modal menampilkan data terbaru
-        setEditingTask(updatedTaskInList);
-      }
-    }
-  }, [tasks, isEditModalOpen, editingTask]);
-  // -----------------------------------------------------------
-
   const handleFilterChange = (e) => { setStatusFilter(e.target.value); setCurrentPage(1); };
   const handleSortChange = (e) => { setSortBy(e.target.value); setCurrentPage(1); };
   const handleSearchChange = (e) => { setSearchTerm(e.target.value); setCurrentPage(1); };
@@ -247,6 +233,7 @@ export default function TasksPage({ currentUser }) {
           isOpen={isDetailModalOpen}
           onClose={handleCloseDetailModal}
           task={viewingTask}
+          currentUser={currentUser}
         />
       )}
     </div>

@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany; // <-- Tambahkan ini
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Task extends Model
 {
@@ -51,10 +51,18 @@ class Task extends Model
     }
 
     /**
-     * Relasi baru untuk mendapatkan semua lampiran tugas.
+     * Relasi untuk mendapatkan semua lampiran tugas.
      */
     public function attachments(): HasMany
     {
         return $this->hasMany(TaskAttachment::class)->latest();
+    }
+
+    /**
+     * Relasi baru untuk mendapatkan semua komentar tugas.
+     */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(TaskComment::class)->latest();
     }
 }
