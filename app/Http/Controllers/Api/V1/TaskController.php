@@ -26,7 +26,19 @@ class TaskController extends Controller
         $user = Auth::user();
         $query = Task::with(['user', 'collaborators', 'attachments']);
 
-        if (!$user->isAdmin()) {
+        $selectedUserId = $request->input('user_id');
+
+        if ($user->isAdmin() && $selectedUserId && $selectedUserId !== 'all') {
+            // Jika admin memfilter berdasarkan pengguna tertentu, cari tugas yang dibuat oleh
+            // pengguna tersebut atau di mana pengguna tersebut adalah kolaborator.
+            $query->where(function ($q) use ($selectedUserId) {
+                $q->where('user_id', $selectedUserId)
+                  ->orWhereHas('collaborators', function ($subQ) use ($selectedUserId) {
+                      $subQ->where('users.id', $selectedUserId);
+                  });
+            });
+        } else if (!$user->isAdmin()) {
+            // Logika yang sudah ada untuk pengguna non-admin
             $query->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
                   ->orWhereHas('collaborators', function ($subQ) use ($user) {

@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\StatisticsController;
 use App\Http\Controllers\Api\V1\TaskCommentController;
 use App\Http\Controllers\Api\V1\TaskAttachmentController;
+use App\Http\Resources\Api\V1\UserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -50,8 +51,9 @@ Route::post('/login', function (Request $request) {
 Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     
     // Rute Pengguna & Profil
-    Route::get('/user', function (Request $request) {
-        return $request->user();
+   Route::get('/user', function (Request $request) {
+        // Gunakan UserResource untuk memastikan 'role' disertakan
+        return new UserResource($request->user());
     });
     Route::get('users', [UserController::class, 'index']);
     Route::post('user/photo', [ProfileController::class, 'updatePhoto']);

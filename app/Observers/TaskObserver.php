@@ -43,10 +43,12 @@ class TaskObserver
     /**
      * Handle the Task "deleted" event.
      */
-    public function deleted(Task $task): void
-    {
-        $this->recordActivity('menghapus tugas ini', $task);
-    }
+   public function deleting(Task $task): void
+{
+    // INI SOLUSINYA, BERJALAN SEBELUM TUGAS DIHAPUS
+    $this->recordActivity('menghapus tugas: ' . $task->title, $task);
+}
+
 
     /**
      * Helper function untuk mencatat aktivitas.

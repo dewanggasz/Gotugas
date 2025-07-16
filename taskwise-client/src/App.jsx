@@ -23,7 +23,7 @@ function App() {
     if (token) {
       try {
         const response = await getUser();
-        setCurrentUser(response.data);
+        setCurrentUser(response.data.data);
       } catch (error) {
         console.error("Token tidak valid, logout...", error);
         handleLogout();
@@ -76,7 +76,7 @@ function App() {
       onLogout={handleLogout}
       currentUser={currentUser}
     >
-      {activePage === 'statistics' && <StatisticsPage />}
+      {activePage === 'statistics' && <StatisticsPage currentUser={currentUser} />}
       {activePage === 'tasks' && <TasksPage currentUser={currentUser} />}
       {/* 4. Tampilkan halaman profil jika aktif */}
       {activePage === 'profile' && <ProfilePage currentUser={currentUser} onUpdateSuccess={handleProfileUpdate} />}

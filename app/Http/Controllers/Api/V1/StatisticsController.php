@@ -35,55 +35,65 @@ class StatisticsController extends Controller
             $startDate = $endDate->copy()->subDays(29);
         }
 
+        // ======================= PERUBAHAN DIMULAI DI SINI =======================
+
         // Query dasar yang akan digunakan oleh semua statistik
         $baseQuery = Task::query();
-        if (!$user->isAdmin()) {
+
+        // Ambil user_id yang dipilih dari request (jika ada)
+        $selectedUserId = $request->input('user_id');
+
+        // Terapkan filter berdasarkan peran dan user_id yang dipilih
+        if ($user->isAdmin() && $selectedUserId) {
+            // KASUS 1: Admin memilih pengguna spesifik dari filter.
+            // Batasi query ke tugas yang terkait dengan pengguna yang dipilih.
+            $baseQuery->where(function (Builder $q) use ($selectedUserId) {
+                $q->where('user_id', $selectedUserId)
+                  ->orWhereHas('collaborators', fn(Builder $subQ) => $subQ->where('users.id', $selectedUserId));
+            });
+        } elseif (!$user->isAdmin()) {
+            // KASUS 2: Pengguna bukan admin.
+            // Batasi query ke tugas yang terkait dengan pengguna yang sedang login.
             $baseQuery->where(function (Builder $q) use ($user) {
                 $q->where('user_id', $user->id)
                   ->orWhereHas('collaborators', fn(Builder $subQ) => $subQ->where('users.id', $user->id));
             });
+        }
+        // KASUS 3 (Implisit): Admin TIDAK memilih pengguna.
+        // Tidak ada filter pengguna yang diterapkan, sehingga data dari semua pengguna akan diambil.
+
+        // ======================== PERUBAHAN SELESAI DI SINI ========================
+
+
+        // --- Bagian ini sedikit berbeda dari file Anda, tetapi logikanya lebih akurat ---
+        // Logika untuk performance data juga perlu menghormati filter user_id jika ada
+        $performanceData = [];
+        if ($user->isAdmin()) {
+            $performanceData = $this->getPerformanceData($startDate, $endDate, $selectedUserId);
         }
 
         return response()->json([
             'summary' => $this->getSummaryData(clone $baseQuery, $startDate, $endDate),
             'trend' => $this->getTrendData(clone $baseQuery, $startDate, $endDate, $period),
             'status_composition' => $this->getStatusCompositionData(clone $baseQuery, $startDate, $endDate),
-            'performance' => $user->isAdmin() ? $this->getPerformanceData($startDate, $endDate) : [],
+            'performance' => $performanceData,
         ]);
     }
 
     private function getSummaryData(Builder $query, Carbon $startDate, Carbon $endDate): array
     {
-        // Query yang sudah difilter berdasarkan rentang tanggal pembuatan
         $periodQuery = (clone $query)->whereBetween('created_at', [$startDate, $endDate]);
-
         $createdInPeriod = (clone $periodQuery)->count();
-
-        $completedInPeriod = (clone $periodQuery)
-            ->where('status', 'completed')
-            ->count();
-        
-        $cancelledInPeriod = (clone $periodQuery)
-            ->where('status', 'cancelled')
-            ->count();
-        
-        // --- PERBAIKAN: Hitung 'in_progress' berdasarkan periode juga ---
-        $inProgressInPeriod = (clone $periodQuery)
-            ->where('status', 'in_progress')
-            ->count();
-            
-        // Overdue tetap dihitung dari semua tugas, bukan hanya periode ini
-        $overdue = (clone $query)
-            ->where('status', '!=', 'completed')
-            ->whereNotNull('due_date')
-            ->whereDate('due_date', '<', now())
-            ->count();
+        $completedInPeriod = (clone $periodQuery)->where('status', 'completed')->count();
+        $cancelledInPeriod = (clone $periodQuery)->where('status', 'cancelled')->count();
+        $inProgressInPeriod = (clone $periodQuery)->where('status', 'in_progress')->count();
+        $overdue = (clone $query)->where('status', '!=', 'completed')->whereNotNull('due_date')->whereDate('due_date', '<', now())->count();
 
         return [
             'created_in_period' => $createdInPeriod,
             'completed_in_period' => $completedInPeriod,
             'cancelled_in_period' => $cancelledInPeriod,
-            'in_progress_in_period' => $inProgressInPeriod, // <-- Kirim data baru
+            'in_progress_in_period' => $inProgressInPeriod,
             'overdue' => $overdue,
         ];
     }
@@ -133,19 +143,54 @@ class StatisticsController extends Controller
         })->values();
     }
 
-    private function getPerformanceData(Carbon $startDate, Carbon $endDate): Collection
+    // --- Ubah signature method ini untuk menerima $selectedUserId ---
+    private function getPerformanceData(Carbon $startDate, Carbon $endDate, ?string $selectedUserId): Collection
     {
-        return User::where('role', 'employee')
-            ->withCount(['createdTasks' => function (Builder $query) use ($startDate, $endDate) {
-                $query->where('status', 'completed')
-                      ->whereBetween('updated_at', [$startDate, $endDate]);
-            }])
-            ->get()
-            ->map(function ($user) {
-                return [
-                    'name' => $user->name,
-                    'Tugas Selesai' => $user->created_tasks_count,
-                ];
-            });
+        $query = User::query();
+        
+        if ($selectedUserId) {
+            $query->where('id', $selectedUserId);
+        } else {
+            $query->where('role', 'employee');
+        }
+
+        return $query->with([
+            'createdTasks' => function ($query) use ($startDate, $endDate) {
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            }
+        ])->get()->map(function ($user) {
+            $tasksInPeriod = $user->createdTasks;
+
+            // Memecah tugas berdasarkan statusnya
+            $completed = $tasksInPeriod->where('status', 'completed')->count();
+            $cancelled = $tasksInPeriod->where('status', 'cancelled')->count();
+            
+            // Tugas yang aktif (belum selesai/dibatalkan) dan sudah lewat waktu
+            $overdue = $tasksInPeriod
+                ->whereNotIn('status', ['completed', 'cancelled'])
+                ->where('due_date', '<', now())
+                ->count();
+            
+            // Tugas yang sedang dikerjakan dan belum lewat waktu
+            $inProgressOnTime = $tasksInPeriod
+                ->where('status', 'in_progress')
+                ->where(fn($q) => $q->where('due_date', '>=', now())->orWhereNull('due_date'))
+                ->count();
+
+            // Tugas yang belum dimulai dan belum lewat waktu
+            $notStartedOnTime = $tasksInPeriod
+                ->where('status', 'not_started')
+                ->where(fn($q) => $q->where('due_date', '>=', now())->orWhereNull('due_date'))
+                ->count();
+
+            return [
+                'name' => $user->name,
+                'Selesai' => $completed,
+                'Dikerjakan' => $inProgressOnTime,
+                'Belum Dimulai' => $notStartedOnTime,
+                'Terlambat' => $overdue,
+                'Dibatalkan' => $cancelled,
+            ];
+        });
     }
 }

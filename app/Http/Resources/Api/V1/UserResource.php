@@ -18,7 +18,8 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'email' => $this->email,
-            'profile_photo_url' => $this->profile_photo_url, // <-- Tambahkan ini
+            'profile_photo_url' => $this->profile_photo_url,
+            'role' => $this->role, // <-- Tambahkan baris ini
         ];
     }
 }
