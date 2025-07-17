@@ -14,5 +14,4 @@ Lihat Tugas
 </x-mail::button>
 
 Terima kasih,<br>
-Tim {{ config('app.name') }}
 </x-mail::message>
