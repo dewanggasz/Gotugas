@@ -1,61 +1,91 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Taskwise - Sistem Manajemen Tugas Kolaboratif
+Taskwise adalah aplikasi full-stack yang dirancang untuk membantu tim mengelola tugas secara efisien. Dengan antarmuka yang modern dan fitur kolaborasi yang lengkap, Taskwise memungkinkan pengguna untuk melacak kemajuan proyek, berdiskusi, dan berbagi file dalam satu platform terpusat.
+## Fitur Utama
+- Manajemen Tugas (CRUD): Buat, perbarui, lihat, dan hapus tugas dengan mudah.
+- Atribut Tugas Lengkap: Setiap tugas memiliki status, prioritas, dan tanggal jatuh tempo.
+- Kolaborasi Tim: Tambahkan beberapa anggota tim sebagai kolaborator dalam satu tugas.
+- Sistem Komentar: Berdiskusi langsung di setiap tugas dengan dukungan threaded comments.
+- Lampiran File: Unggah dan bagikan file penting yang terkait dengan tugas.
+- Dasbor Statistik: Visualisasikan produktivitas dengan ringkasan jumlah tugas yang selesai, sedang berjalan, dll.
+- Panel Admin: Panel admin yang kuat (dibangun dengan Filament) untuk mengelola pengguna dan semua tugas di sistem.
+- Notifikasi Email: Dapatkan notifikasi otomatis untuk penugasan baru dan komentar baru.
+- Riwayat Aktivitas: Lacak semua perubahan yang terjadi pada sebuah tugas untuk transparansi penuh.
+## Tech Stack
+Proyek ini dibangun menggunakan teknologi modern untuk backend dan frontend.
+### Backend (Laravel API)
+- Framework: Laravel 12
+- Bahasa: PHP 8.2+
+- Database: MySQL
+- Autentikasi API: Laravel Sanctum
+- Panel Admin: Filament 3.3
+- Tugas Latar Belakang: Laravel Queues
+### Frontend (React Client)
+- Framework/Library: React
+- Build Tool: Vite
+- Styling: Tailwind CSS & DaisyUI
+- Manajemen State & Cache: TanStack Query (React Query)
+- Permintaan API: Axios
+- Routing: React Router DOM
+- Notifikasi UI: React Hot Toast
+## Panduan Instalasi & Menjalankan Proyek
+Untuk menjalankan proyek ini di lingkungan lokal Anda, ikuti langkah-langkah di bawah ini.
+### Prasyarat
+- PHP >= 8.2
+- Composer
+- Node.js & NPM
+- Server Database (contoh: MySQL)
+- Lingkungan server lokal (contoh: XAMPP, Laragon, Laravel Valet/Herd)
+### 1. Instalasi
+Langkah-langkah ini hanya perlu dilakukan sekali saat pertama kali menyiapkan proyek.
+```bash
+    # 1. Clone repository ini
+    git clone [URL_REPOSITORY_ANDA]
+    cd [NAMA_FOLDER_PROYEK]
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+    # 2. Install dependensi Composer (Backend)
+    composer install
 
-## About Laravel
+    # 3. Install dependensi NPM (Frontend)
+    # Masuk ke direktori client terlebih dahulu
+    cd taskwise-client
+    npm install
+    cd .. 
+    # Kembali ke direktori utama
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+    # 4. Salin file environment untuk Backend
+    cp .env.example .env
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+    # 5. Konfigurasi file .env Laravel Anda
+    # - Atur koneksi database (DB_DATABASE, DB_USERNAME, DB_PASSWORD)
+    # - Atur konfigurasi email, misalnya menggunakan Mailtrap
+    MAIL_MAILER=smtp
+    MAIL_HOST=sandbox.smtp.mailtrap.io
+    MAIL_PORT=2525
+    MAIL_USERNAME=...
+    MAIL_PASSWORD=...
+    MAIL_ENCRYPTION=tls
+    # - Pastikan APP_URL dan FRONTEND_URL sudah benar
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+    # 6. Buat kunci aplikasi Laravel
+    php artisan key:generate
 
-## Learning Laravel
+    # 7. Jalankan migrasi dan seeder database
+    php artisan migrate --seed --class=RealisticUserTaskSeeder
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+    # 8. Buat symbolic link untuk storage
+    php artisan storage:link
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+    # 9. Buat file environment untuk Frontend
+    # Masuk ke direktori client
+    cd taskwise-client
+    echo "VITE_API_BASE_URL=[http://taskwise-api.test/api](http://taskwise-api.test/api)" > .env
+    cd ..
+    # Kembali ke direktori utama
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### 2. Akses Panel Admin
+Untuk mengakses panel admin yang dibuat dengan Filament:
+    - URL: ```http://localhost:8000/admin``` (atau ```http://taskwise-api.test/admin```)
+    - Email: ```admin@example.com```
+    - Password: ```password```
+(Kredensial ini dibuat oleh seeder RealisticUserTaskSeeder.php).
