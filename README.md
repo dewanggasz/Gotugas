@@ -1,15 +1,26 @@
 # Taskwise - Sistem Manajemen Tugas Kolaboratif
 Taskwise adalah aplikasi full-stack yang dirancang untuk membantu tim mengelola tugas secara efisien. Dengan antarmuka yang modern dan fitur kolaborasi yang lengkap, Taskwise memungkinkan pengguna untuk melacak kemajuan proyek, berdiskusi, dan berbagi file dalam satu platform terpusat.
 ## ✨ Fitur Utama
-- Manajemen Tugas (CRUD): Buat, perbarui, lihat, dan hapus tugas dengan mudah.
-- Atribut Tugas Lengkap: Setiap tugas memiliki status, prioritas, dan tanggal jatuh tempo.
-- Kolaborasi Tim: Tambahkan beberapa anggota tim sebagai kolaborator dalam satu tugas.
-- Sistem Komentar: Berdiskusi langsung di setiap tugas dengan dukungan threaded comments.
-- Lampiran File: Unggah dan bagikan file penting yang terkait dengan tugas.
-- Dasbor Statistik: Visualisasikan produktivitas dengan ringkasan jumlah tugas yang selesai, sedang berjalan, dll.
-- Panel Admin: Panel admin yang kuat (dibangun dengan Filament) untuk mengelola pengguna dan semua tugas di sistem.
-- Notifikasi Email: Dapatkan notifikasi otomatis untuk penugasan baru dan komentar baru.
-- Riwayat Aktivitas: Lacak semua perubahan yang terjadi pada sebuah tugas untuk transparansi penuh.
+- **Manajemen Tugas Lengkap:** Pengguna dapat membuat, membaca, mengedit, dan menghapus (CRUD) tugas mereka sendiri.
+- **Kolaborasi Tim Canggih:**
+    - Undang banyak pengguna untuk berkolaborasi dalam satu tugas.
+    - Atur izin granular (```edit```, ```komentar```, ```lihat```) untuk setiap kolaborator.
+- **Diskusi & Riwayat:**
+    - Sistem komentar berantai (*threaded comments*) untuk setiap tugas.
+    - Log aktivitas otomatis yang melacak semua perubahan penting.
+    - Kemampuan untuk menambahkan catatan pembaruan (```Update Note```) saat mengedit tugas.
+- **Manajemen Lampiran:**
+    - Unggah file dan gambar.
+    - Tambahkan lampiran berupa link eksternal.
+- **Dasbor Analitik Interaktif(React):**
+    - Kartu ringkasan (KPI) dan berbagai grafik (tren, komposisi status, performa tim).
+    - Filter dinamis berdasarkan periode (30 hari, 90 hari, tahun ini, dan rentang kustom).
+    - Kemampuan pengguna dengan role admin untuk melihat statistik per pengguna.
+- **Panel Admin Kuat (Filament):**
+    - Antarmuka terpisah untuk admin mengelola semua pengguna dan tugas di seluruh sistem.
+- **Personalisasi Pengguna:**
+    - Pengguna dapat memperbarui nama, mengubah password, dan mengunggah foto profil mereka sendiri.
+- **Notifikasi Email:** Dapatkan notifikasi otomatis untuk penugasan baru dan komentar baru.
 ## 🚀 Tech Stack
 Proyek ini dibangun menggunakan teknologi modern untuk backend dan frontend.
 ### Backend (Laravel API)
