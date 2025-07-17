@@ -573,7 +573,9 @@ export default function TasksPage({ currentUser }) {
         setError("Gagal memuat daftar pengguna.")
       }
     }
-    if (currentUser?.role === "admin") {
+    // --- PERBAIKAN DI SINI ---
+    // Ambil daftar pengguna jika currentUser ada, tidak peduli perannya.
+    if (currentUser) {
       fetchAllUsers()
     }
   }, [currentUser])

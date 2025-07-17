@@ -9,6 +9,7 @@ use App\Models\Task;
 use App\Models\TaskActivity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Jobs\SendTaskAssignedNotification;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Carbon;
@@ -124,7 +125,13 @@ class TaskController extends Controller
         $collaboratorsData = collect($validated['collaborators'])->keyBy('user_id');
         $collaboratorsData[$user->id] = ['user_id' => $user->id, 'permission' => 'edit'];
         $syncData = $collaboratorsData->mapWithKeys(fn($item) => [$item['user_id'] => ['permission' => $item['permission']]])->all();
+        
+        // Simpan kolaborator
         $task->collaborators()->sync($syncData);
+
+        // --- 2. Panggil Job SETELAH kolaborator disimpan ---
+        // Kita kirim seluruh model $task ke dalam Job
+        SendTaskAssignedNotification::dispatch($task->id);
 
         return new TaskResource($task->load(['user', 'collaborators', 'attachments']));
     }
@@ -163,7 +170,18 @@ class TaskController extends Controller
             $collaboratorsData = collect($validated['collaborators'])->keyBy('user_id');
             $collaboratorsData[$user->id] = ['user_id' => $user->id, 'permission' => 'edit'];
             $syncData = $collaboratorsData->mapWithKeys(fn($item) => [$item['user_id'] => ['permission' => $item['permission']]])->all();
-            $task->collaborators()->sync($syncData);
+            
+            // --- PERUBAHAN DI SINI ---
+            // Tangkap hasil dari sync untuk mengetahui siapa yang baru ditambahkan
+            $syncResult = $task->collaborators()->sync($syncData);
+
+            // Ambil ID kolaborator yang baru ditambahkan
+            $newlyAddedIds = $syncResult['attached'];
+
+            // Jika ada kolaborator baru, panggil Job hanya untuk mereka
+            if (!empty($newlyAddedIds)) {
+                SendTaskAssignedNotification::dispatch($task->id, $newlyAddedIds);
+            }
         }
 
         if ($request->filled('update_message')) {

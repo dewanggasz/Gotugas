@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\TaskCommentResource;
+use App\Jobs\SendNewCommentNotification; // <-- 1. Impor Job baru
 use App\Models\Task;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -20,11 +21,10 @@ class TaskCommentController extends Controller
     {
         $this->authorize('view', $task);
 
-        // --- PERBAIKAN: Eager load balasan secara rekursif ---
         $comments = $task->comments()
             ->whereNull('parent_id')
             ->with(['user', 'replies' => function ($query) {
-                $query->with(['user', 'replies.user']); // Muat balasan dan user pembuatnya
+                $query->with(['user', 'replies.user']);
             }])
             ->get();
 
@@ -56,6 +56,9 @@ class TaskCommentController extends Controller
             'user_id' => $user->id,
             'description' => $validated['parent_id'] ? "membalas sebuah komentar" : "menambahkan komentar",
         ]);
+
+        // --- 2. Panggil Job SETELAH komentar dibuat ---
+        SendNewCommentNotification::dispatch($comment);
 
         return new TaskCommentResource($comment->load('user'));
     }

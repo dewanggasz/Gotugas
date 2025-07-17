@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
-use App\Models\Task; // <-- Tambahkan ini
-use App\Observers\TaskObserver; // <-- Tambahkan ini
+use App\Models\Task;
+use App\Models\TaskComment;
+use App\Observers\TaskObserver;
+use App\Observers\TaskCommentObserver;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
@@ -24,11 +26,16 @@ class EventServiceProvider extends ServiceProvider
 
     /**
      * Register any events for your application.
+     *
+     * Metode ini adalah tempat yang tepat untuk mendaftarkan observer.
      */
     public function boot(): void
     {
-        // Daftarkan observer kita di sini
+        // Mendaftarkan observer untuk model Task
         Task::observe(TaskObserver::class);
+
+        // Mendaftarkan observer baru untuk model TaskComment
+        TaskComment::observe(TaskCommentObserver::class);
     }
 
     /**
