@@ -26,6 +26,11 @@ export const getUser = () => apiClient.get('/v1/user');
 export const getUsers = () => apiClient.get('/v1/users');
 export const getStatistics = (params) => apiClient.get('/v1/statistics', { params });
 export const getTasks = (params) => apiClient.get('/v1/tasks', { params });
+
+// --- FUNGSI BARU DI SINI ---
+// Fungsi untuk mengambil satu tugas spesifik berdasarkan ID
+export const getTask = (id) => apiClient.get(`/v1/tasks/${id}`);
+
 export const getTaskActivities = (taskId) => apiClient.get(`/v1/tasks/${taskId}/activities`);
 export const createTask = (taskData) => apiClient.post('/v1/tasks', taskData);
 export const updateTask = (id, taskData) => apiClient.put(`/v1/tasks/${id}`, taskData);
@@ -57,18 +62,9 @@ export const addLinkAttachment = (taskId, url) => {
 export const deleteAttachment = (attachmentId) => {
     return apiClient.delete(`/v1/attachments/${attachmentId}`);
 };
-
-
-// --- FUNGSI BARU UNTUK KOMENTAR ---
-
-// Fungsi untuk mengambil daftar komentar dari sebuah tugas
 export const getTaskComments = (taskId) => {
     return apiClient.get(`/v1/tasks/${taskId}/comments`);
 };
-
-// Fungsi untuk mengirim komentar baru ke sebuah tugas (bisa juga untuk balasan)
 export const postTaskComment = (taskId, commentData) => {
     return apiClient.post(`/v1/tasks/${taskId}/comments`, commentData);
 };
-
-

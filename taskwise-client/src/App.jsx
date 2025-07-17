@@ -3,22 +3,38 @@ import LoginPage from './pages/LoginPage';
 import Layout from './components/Layout';
 import StatisticsPage from './pages/StatisticsPage';
 import TasksPage from './pages/TasksPage';
-import ProfilePage from './pages/ProfilePage'; // 1. Import halaman baru
+import ProfilePage from './pages/ProfilePage';
 import { getUser } from './services/api';
+
+// --- FUNGSI BARU ---
+// Fungsi ini akan menentukan halaman awal berdasarkan URL di browser
+const getInitialPage = () => {
+  const path = window.location.pathname;
+  if (path.startsWith('/tasks')) {
+    return 'tasks';
+  }
+  if (path.startsWith('/profile')) {
+    return 'profile';
+  }
+  // Jika tidak cocok, gunakan nilai dari localStorage atau default ke 'statistics'
+  return localStorage.getItem('activePage') || 'statistics';
+};
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('authToken'));
-  const [activePage, setActivePage] = useState(localStorage.getItem('activePage') || 'statistics');
+  // --- PERUBAHAN DI SINI ---
+  // Gunakan fungsi baru untuk menentukan halaman aktif awal
+  const [activePage, setActivePage] = useState(getInitialPage());
   
   const [currentUser, setCurrentUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [userRefetchTrigger, setUserRefetchTrigger] = useState(0); // State untuk memicu refresh
+  const [userRefetchTrigger, setUserRefetchTrigger] = useState(0);
 
   useEffect(() => {
+    // Tetap simpan halaman aktif ke localStorage saat berubah
     localStorage.setItem('activePage', activePage);
   }, [activePage]);
 
-  // 2. Gunakan useCallback agar fungsi tidak dibuat ulang di setiap render
   const fetchCurrentUser = useCallback(async () => {
     if (token) {
       try {
@@ -37,7 +53,7 @@ function App() {
 
   useEffect(() => {
     fetchCurrentUser();
-  }, [token, userRefetchTrigger, fetchCurrentUser]); // Tambahkan trigger ke dependensi
+  }, [token, userRefetchTrigger, fetchCurrentUser]);
 
   const handleLoginSuccess = (newToken) => {
     localStorage.setItem('authToken', newToken);
@@ -52,7 +68,6 @@ function App() {
     setCurrentUser(null);
   };
 
-  // 3. Fungsi yang akan dipanggil dari ProfilePage setelah sukses upload
   const handleProfileUpdate = () => {
     setUserRefetchTrigger(c => c + 1);
   };
@@ -78,7 +93,6 @@ function App() {
     >
       {activePage === 'statistics' && <StatisticsPage currentUser={currentUser} />}
       {activePage === 'tasks' && <TasksPage currentUser={currentUser} />}
-      {/* 4. Tampilkan halaman profil jika aktif */}
       {activePage === 'profile' && <ProfilePage currentUser={currentUser} onUpdateSuccess={handleProfileUpdate} />}
     </Layout>
   );

@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { getTasks, createTask, updateTask, deleteTask, getUsers } from "../services/api"
+// --- 1. Impor fungsi getTask ---
+import { getTasks, getTask, createTask, updateTask, deleteTask, getUsers } from "../services/api"
 import Modal from "../components/Modal"
 import TaskForm from "../components/TaskForm"
 import TaskDetailModal from "../components/TaskDetailModal"
@@ -25,7 +26,7 @@ import {
   Target,
 } from "lucide-react"
 
-// Custom hook for debouncing
+// ... (semua komponen helper seperti useDebounce, CustomSelect, dll. tetap sama)
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value)
   useEffect(() => {
@@ -39,7 +40,6 @@ function useDebounce(value, delay) {
   return debouncedValue
 }
 
-// Enhanced CustomSelect Component
 const CustomSelect = ({ options, value, onChange, placeholder, icon: Icon, className = "" }) => {
   const [isOpen, setIsOpen] = useState(false)
   const selectRef = useRef(null)
@@ -111,7 +111,6 @@ const CustomSelect = ({ options, value, onChange, placeholder, icon: Icon, class
   )
 }
 
-// Enhanced Pagination Component
 const Pagination = ({ meta, onPageChange }) => {
   if (!meta || meta.last_page <= 1) return null
 
@@ -195,7 +194,6 @@ const Pagination = ({ meta, onPageChange }) => {
   )
 }
 
-// Enhanced Status Badge Component
 const StatusBadge = ({ status }) => {
   const statusConfig = {
     not_started: {
@@ -233,7 +231,6 @@ const StatusBadge = ({ status }) => {
   )
 }
 
-// Enhanced Avatar Component
 const Avatar = ({ user, size = "sm" }) => {
   if (!user) return null
 
@@ -269,7 +266,6 @@ const Avatar = ({ user, size = "sm" }) => {
   )
 }
 
-// Enhanced Collaborator Avatars Component
 const CollaboratorAvatars = ({ collaborators, creator }) => {
   if (!creator) return null
 
@@ -297,7 +293,6 @@ const CollaboratorAvatars = ({ collaborators, creator }) => {
   )
 }
 
-// Enhanced Action Buttons Component
 const ActionButtons = ({ task, onEdit, onDelete, onView, currentUser }) => {
   const canModify = task.collaborators.some((c) => c.id === currentUser?.id && c.permission === "edit")
   const canDelete = task.user?.id === currentUser?.id || currentUser?.role === "admin"
@@ -337,7 +332,6 @@ const ActionButtons = ({ task, onEdit, onDelete, onView, currentUser }) => {
   )
 }
 
-// Enhanced Task Display Component with Fixed Column Widths
 const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
   const formatDate = (dateString) => {
     if (!dateString) return "N/A"
@@ -539,7 +533,7 @@ const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
   )
 }
 
-// Main TasksPage Component
+
 export default function TasksPage({ currentUser }) {
   const [tasks, setTasks] = useState([])
   const [paginationMeta, setPaginationMeta] = useState(null)
@@ -573,8 +567,6 @@ export default function TasksPage({ currentUser }) {
         setError("Gagal memuat daftar pengguna.")
       }
     }
-    // --- PERBAIKAN DI SINI ---
-    // Ambil daftar pengguna jika currentUser ada, tidak peduli perannya.
     if (currentUser) {
       fetchAllUsers()
     }
@@ -606,6 +598,34 @@ export default function TasksPage({ currentUser }) {
       fetchTasks()
     }
   }, [statusFilter, sortBy, currentPage, debouncedSearchTerm, currentUser, forceRefetch, selectedUserId])
+
+  // --- 2. LOGIKA BARU DI SINI ---
+  // Efek ini berjalan sekali saat komponen dimuat untuk menangani deep link
+  useEffect(() => {
+    const path = window.location.pathname;
+    // Mencocokkan URL seperti /tasks/111
+    const match = path.match(/\/tasks\/(\d+)/);
+    const taskIdFromUrl = match ? parseInt(match[1], 10) : null;
+
+    if (taskIdFromUrl) {
+      const fetchAndOpenTask = async () => {
+        try {
+          console.log(`Mencoba memuat tugas dengan ID: ${taskIdFromUrl}`);
+          const response = await getTask(taskIdFromUrl);
+          handleOpenDetailModal(response.data.data);
+          
+          // Membersihkan URL setelah modal dibuka untuk menghindari pembukaan berulang
+          window.history.replaceState(null, '', '/tasks');
+        } catch (error) {
+          console.error("Gagal memuat detail tugas dari URL", error);
+          alert("Tugas dengan ID tersebut tidak ditemukan atau Anda tidak memiliki akses.");
+          window.history.replaceState(null, '', '/tasks');
+        }
+      };
+
+      fetchAndOpenTask();
+    }
+  }, []); // Dependensi kosong berarti ini hanya berjalan sekali
 
   useEffect(() => {
     if (isEditModalOpen && editingTask) {
