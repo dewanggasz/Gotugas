@@ -1,6 +1,6 @@
 # Taskwise - Sistem Manajemen Tugas Kolaboratif
 Taskwise adalah aplikasi full-stack yang dirancang untuk membantu tim mengelola tugas secara efisien. Dengan antarmuka yang modern dan fitur kolaborasi yang lengkap, Taskwise memungkinkan pengguna untuk melacak kemajuan proyek, berdiskusi, dan berbagi file dalam satu platform terpusat.
-## Fitur Utama
+## ✨ Fitur Utama
 - Manajemen Tugas (CRUD): Buat, perbarui, lihat, dan hapus tugas dengan mudah.
 - Atribut Tugas Lengkap: Setiap tugas memiliki status, prioritas, dan tanggal jatuh tempo.
 - Kolaborasi Tim: Tambahkan beberapa anggota tim sebagai kolaborator dalam satu tugas.
@@ -10,7 +10,7 @@ Taskwise adalah aplikasi full-stack yang dirancang untuk membantu tim mengelola 
 - Panel Admin: Panel admin yang kuat (dibangun dengan Filament) untuk mengelola pengguna dan semua tugas di sistem.
 - Notifikasi Email: Dapatkan notifikasi otomatis untuk penugasan baru dan komentar baru.
 - Riwayat Aktivitas: Lacak semua perubahan yang terjadi pada sebuah tugas untuk transparansi penuh.
-## Tech Stack
+## 🚀 Tech Stack
 Proyek ini dibangun menggunakan teknologi modern untuk backend dan frontend.
 ### Backend (Laravel API)
 - Framework: Laravel 12
@@ -27,7 +27,7 @@ Proyek ini dibangun menggunakan teknologi modern untuk backend dan frontend.
 - Permintaan API: Axios
 - Routing: React Router DOM
 - Notifikasi UI: React Hot Toast
-## Panduan Instalasi & Menjalankan Proyek
+## ⚙️ Panduan Instalasi & Menjalankan Proyek
 Untuk menjalankan proyek ini di lingkungan lokal Anda, ikuti langkah-langkah di bawah ini.
 ### Prasyarat
 - PHP >= 8.2
@@ -58,12 +58,12 @@ Langkah-langkah ini hanya perlu dilakukan sekali saat pertama kali menyiapkan pr
     # 5. Konfigurasi file .env Laravel Anda
     # - Atur koneksi database (DB_DATABASE, DB_USERNAME, DB_PASSWORD)
     # - Atur konfigurasi email, misalnya menggunakan Mailtrap
-    MAIL_MAILER=smtp
-    MAIL_HOST=sandbox.smtp.mailtrap.io
-    MAIL_PORT=2525
-    MAIL_USERNAME=...
-    MAIL_PASSWORD=...
-    MAIL_ENCRYPTION=tls
+        MAIL_MAILER=smtp
+        MAIL_HOST=sandbox.smtp.mailtrap.io
+        MAIL_PORT=2525
+        MAIL_USERNAME=...
+        MAIL_PASSWORD=...
+        MAIL_ENCRYPTION=tls
     # - Pastikan APP_URL dan FRONTEND_URL sudah benar
 
     # 6. Buat kunci aplikasi Laravel
@@ -85,7 +85,7 @@ Langkah-langkah ini hanya perlu dilakukan sekali saat pertama kali menyiapkan pr
 
 ### 2. Akses Panel Admin
 Untuk mengakses panel admin yang dibuat dengan Filament:
-    - URL: ```http://localhost:8000/admin``` (atau ```http://taskwise-api.test/admin```)
-    - Email: ```admin@example.com```
-    - Password: ```password```
+- URL: ```http://localhost:8000/admin``` (atau ```http://taskwise-api.test/admin```)
+- Email: ```admin@example.com```
+- Password: ```password```
 (Kredensial ini dibuat oleh seeder RealisticUserTaskSeeder.php).
