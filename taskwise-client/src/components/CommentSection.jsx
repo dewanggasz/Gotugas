@@ -2,9 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { getTaskComments, postTaskComment } from "../services/api"
-import { Send, MessageSquare, Loader2 } from "lucide-react" // Removed Clock icon
-
-// Removed formatDateTime helper as the API provides relative time strings
+import { Send, MessageSquare, Loader2 } from "lucide-react"
 
 // Component for the reply form
 const ReplyForm = ({ taskId, parentId, onCommentPosted, currentUser }) => {
@@ -31,20 +29,20 @@ const ReplyForm = ({ taskId, parentId, onCommentPosted, currentUser }) => {
       <img
         src={currentUser?.profile_photo_url || "/placeholder.svg"}
         alt="Avatar Anda"
-        className="h-7 w-7 rounded-full object-cover flex-shrink-0"
+        className="h-7 w-7 rounded-full object-cover flex-shrink-0 ring-1 ring-slate-200"
       />
       <div className="flex-1">
         <textarea
           value={reply}
           onChange={(e) => setReply(e.target.value)}
           placeholder="Tulis balasan..."
-          className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200 text-sm resize-y min-h-[40px]"
+          className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm resize-y min-h-[40px] placeholder:text-slate-400"
           rows="1"
         />
         <button
           type="submit"
           disabled={isPosting}
-          className="mt-2 px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium disabled:opacity-50 transition-colors duration-200 flex items-center justify-center"
+          className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium disabled:opacity-50 transition-colors duration-200 flex items-center justify-center shadow-sm"
         >
           {isPosting ? (
             <>
@@ -64,25 +62,24 @@ const CommentItem = ({ comment, taskId, onCommentPosted, currentUser, canComment
   const [showReplyForm, setShowReplyForm] = useState(false)
 
   return (
-    <li className="flex gap-4 items-start">
+    <li className="flex gap-4 items-start bg-white p-4 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-200">
       <img
         src={comment.user?.profile_photo_url || "/placeholder.svg"}
         alt={comment.user?.name || "Pengguna"}
-        className="h-9 w-9 rounded-full object-cover flex-shrink-0"
+        className="h-9 w-9 rounded-full object-cover flex-shrink-0 ring-1 ring-slate-200"
       />
       <div className="flex-1">
-        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-          <div className="flex justify-between items-center mb-2">
-            <span className="font-semibold text-sm text-gray-900">{comment.user?.name || "Pengguna"}</span>
-            {/* Directly display the created_at string */}
-            <span className="text-xs text-gray-500">{comment.created_at}</span>
+        <div className="mb-2">
+          <div className="flex justify-between items-center mb-1">
+            <span className="font-semibold text-sm text-slate-900">{comment.user?.name || "Pengguna"}</span>
+            <span className="text-xs text-slate-500">{comment.created_at}</span>
           </div>
-          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{comment.body}</p>
+          <p className="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">{comment.body}</p>
         </div>
         {canComment && (
           <button
             onClick={() => setShowReplyForm(!showReplyForm)}
-            className="text-xs text-gray-600 hover:text-gray-900 hover:underline mt-2 ml-2 transition-colors duration-200"
+            className="text-xs text-blue-600 hover:text-blue-800 hover:underline mt-2 ml-2 transition-colors duration-200"
           >
             {showReplyForm ? "Batal Balas" : "Balas"}
           </button>
@@ -99,7 +96,7 @@ const CommentItem = ({ comment, taskId, onCommentPosted, currentUser, canComment
           />
         )}
         {comment.replies && comment.replies.length > 0 && (
-          <ul className="mt-4 space-y-4 pl-6 border-l border-gray-200">
+          <ul className="mt-4 space-y-4 pl-6 sm:pl-8 border-l border-blue-200">
             {comment.replies.map((reply) => (
               <CommentItem
                 key={reply.id}
@@ -166,8 +163,8 @@ export default function CommentSection({ taskId, currentUser, task }) {
 
   return (
     <div className="space-y-6">
-      <h4 className="font-semibold text-gray-800 text-lg flex items-center gap-2">
-        <MessageSquare className="w-5 h-5 text-gray-600" />
+      <h4 className="font-semibold text-slate-800 text-lg flex items-center gap-2">
+        <MessageSquare className="w-5 h-5 text-slate-600" />
         Diskusi
       </h4>
 
@@ -176,20 +173,20 @@ export default function CommentSection({ taskId, currentUser, task }) {
           <img
             src={currentUser?.profile_photo_url || "/placeholder.svg"}
             alt="Avatar Anda"
-            className="h-10 w-10 rounded-full object-cover flex-shrink-0"
+            className="h-10 w-10 rounded-full object-cover flex-shrink-0 ring-1 ring-slate-200"
           />
           <div className="flex-1">
             <textarea
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Tulis komentar..."
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200 text-sm resize-y min-h-[60px]"
+              className="w-full px-4 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm resize-y min-h-[60px] placeholder:text-slate-400"
               rows="2"
             />
             <button
               type="submit"
               disabled={isPosting}
-              className="mt-3 px-5 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 text-sm font-medium flex items-center justify-center disabled:opacity-50 transition-colors duration-200"
+              className="mt-3 px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 text-sm font-medium flex items-center justify-center disabled:opacity-50 transition-colors duration-200 shadow-md"
             >
               {isPosting ? (
                 <>
@@ -208,8 +205,8 @@ export default function CommentSection({ taskId, currentUser, task }) {
       {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
 
       {isLoading ? (
-        <div className="flex items-center justify-center py-6 text-gray-500">
-          <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mr-2"></div>
+        <div className="flex items-center justify-center py-6 text-slate-500">
+          <div className="w-5 h-5 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin mr-2"></div>
           <span>Memuat komentar...</span>
         </div>
       ) : (
@@ -226,7 +223,7 @@ export default function CommentSection({ taskId, currentUser, task }) {
               />
             ))
           ) : (
-            <p className="text-sm text-gray-500 text-center py-6">Belum ada komentar. Jadilah yang pertama!</p>
+            <p className="text-sm text-slate-500 text-center py-6">Belum ada komentar. Jadilah yang pertama!</p>
           )}
         </ul>
       )}

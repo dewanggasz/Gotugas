@@ -3,25 +3,120 @@
 import { useState, useEffect, useRef } from "react"
 import CollaboratorInput from "./CollaboratorInput" // Assuming this component exists and is styled
 import { uploadAttachment, addLinkAttachment, deleteAttachment } from "../services/api"
-import { Paperclip, Link, Trash2, Loader2, ImageIcon, FileIcon } from "lucide-react"
+import {
+  Paperclip,
+  Link,
+  Trash2,
+  Loader2,
+  ImageIcon,
+  FileIcon,
+  Filter,
+  CheckCircle2,
+  Circle,
+  XCircle,
+  PlayCircle,
+} from "lucide-react"
+
+// Re-using CustomSelect from tasks-page for consistency
+const CustomSelect = ({ options, value, onChange, placeholder, icon: Icon, className = "" }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const selectRef = useRef(null)
+
+  const selectedOption = options.find((option) => option.value === value)
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (selectRef.current && !selectRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
+
+  const handleOptionClick = (optionValue) => {
+    onChange(optionValue)
+    setIsOpen(false)
+  }
+
+  return (
+    <div className={`relative ${className}`} ref={selectRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:bg-slate-50 hover:border-slate-300 group min-h-[40px]"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+      >
+        <span className="flex items-center gap-2">
+          {Icon && <Icon className="h-4 w-4 text-slate-500 group-hover:text-slate-700 transition-colors" />}
+          <span className="font-medium text-slate-700 text-sm truncate">
+            {selectedOption ? selectedOption.label : placeholder}
+          </span>
+        </span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`h-4 w-4 text-slate-400 transition-all duration-200 group-hover:text-slate-600 flex-shrink-0 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <ul
+          className="absolute z-30 w-full bg-white border border-slate-200 rounded-xl shadow-lg mt-1 max-h-60 overflow-auto"
+          role="listbox"
+        >
+          {options.map((option) => (
+            <li
+              key={option.value}
+              onClick={() => handleOptionClick(option.value)}
+              className={`px-4 py-2.5 text-sm cursor-pointer transition-all duration-150 first:rounded-t-xl last:rounded-b-xl ${
+                option.value === value
+                  ? "bg-blue-50 font-semibold text-blue-900 border-l-3 border-blue-500"
+                  : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+              }`}
+              role="option"
+              aria-selected={option.value === value}
+            >
+              {option.label}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
 
 // Helper component for each attachment item
 const AttachmentItem = ({ attachment, onDelete, isDeleting }) => {
   const getIcon = () => {
     if (attachment.type === "image") return <ImageIcon className="w-4 h-4 text-purple-600" />
     if (attachment.type === "link") return <Link className="w-4 h-4 text-blue-600" />
-    return <FileIcon className="w-4 h-4 text-gray-600" />
+    return <FileIcon className="w-4 h-4 text-slate-600" />
   }
 
   return (
-    <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-100 rounded-lg">
+    <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-100 rounded-lg shadow-sm">
       <div className="flex items-center gap-3 min-w-0">
         <div className="flex-shrink-0">{getIcon()}</div>
         <a
           href={attachment.file_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm text-gray-800 hover:underline truncate font-medium"
+          className="text-sm text-slate-800 hover:underline truncate font-medium"
           title={attachment.original_name}
         >
           {attachment.original_name}
@@ -122,7 +217,6 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
   }
 
   const handleAddLink = async () => {
-    // Removed 'e' parameter as it's not a form submit
     if (!linkUrl.trim()) {
       setAttachmentError("URL tidak boleh kosong.")
       return
@@ -158,11 +252,18 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
     }
   }
 
+  const statusOptions = [
+    { value: "not_started", label: "Belum Dimulai", icon: Circle },
+    { value: "in_progress", label: "Dikerjakan", icon: PlayCircle },
+    { value: "completed", label: "Selesai", icon: CheckCircle2 },
+    { value: "cancelled", label: "Dibatalkan", icon: XCircle },
+  ]
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Main Form Section */}
       <div>
-        <label htmlFor="title" className="block text-sm font-medium text-gray-800 mb-2">
+        <label htmlFor="title" className="block text-sm font-medium text-slate-800 mb-2">
           Judul Tugas
         </label>
         <input
@@ -170,14 +271,14 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200 text-sm"
+          className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm placeholder:text-slate-400"
           placeholder="Masukkan judul tugas..."
           required
         />
       </div>
 
       <div>
-        <label htmlFor="collaborators" className="block text-sm font-medium text-gray-800 mb-2">
+        <label htmlFor="collaborators" className="block text-sm font-medium text-slate-800 mb-2">
           Kolaborator
         </label>
         <CollaboratorInput
@@ -189,14 +290,14 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
       </div>
 
       <div>
-        <label htmlFor="description" className="block text-sm font-medium text-gray-800 mb-2">
+        <label htmlFor="description" className="block text-sm font-medium text-slate-800 mb-2">
           Deskripsi
         </label>
         <textarea
           id="description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200 text-sm"
+          className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm placeholder:text-slate-400"
           placeholder="Tambahkan deskripsi tugas..."
           rows="4"
         ></textarea>
@@ -204,23 +305,20 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="status" className="block text-sm font-medium text-gray-800 mb-2">
+          <label htmlFor="status" className="block text-sm font-medium text-slate-800 mb-2">
             Status
           </label>
-          <select
-            id="status"
+          <CustomSelect
+            options={statusOptions}
             value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200 bg-white text-sm appearance-none cursor-pointer"
-          >
-            <option value="not_started">Belum Dimulai</option>
-            <option value="in_progress">Dikerjakan</option>
-            <option value="completed">Selesai</option>
-            <option value="cancelled">Dibatalkan</option>
-          </select>
+            onChange={setStatus}
+            placeholder="Pilih Status"
+            icon={Filter}
+            className="w-full"
+          />
         </div>
         <div>
-          <label htmlFor="dueDate" className="block text-sm font-medium text-gray-800 mb-2">
+          <label htmlFor="dueDate" className="block text-sm font-medium text-slate-800 mb-2">
             Jatuh Tempo
           </label>
           <input
@@ -228,14 +326,14 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
             type="date"
             value={dueDate}
             onChange={(e) => setDueDate(e.target.value)}
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200 text-sm"
+            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm"
           />
         </div>
       </div>
 
       {task && (
         <div>
-          <label htmlFor="updateMessage" className="block text-sm font-medium text-gray-800 mb-2">
+          <label htmlFor="updateMessage" className="block text-sm font-medium text-slate-800 mb-2">
             Catatan Pembaruan (Opsional)
           </label>
           <textarea
@@ -243,7 +341,7 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
             value={updateMessage}
             onChange={(e) => setUpdateMessage(e.target.value)}
             placeholder="Tambahkan catatan untuk menjelaskan perubahan Anda..."
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200 text-sm"
+            className="w-full px-4 py-2.5 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 text-sm placeholder:text-slate-400"
             rows="2"
           ></textarea>
         </div>
@@ -252,9 +350,9 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
       {/* Attachment Section (Only appears in edit mode) */}
       {task && (
         <>
-          <hr className="my-6 border-t border-gray-100" />
+          <hr className="my-6 border-t border-slate-100" />
           <div className="space-y-4">
-            <h3 className="font-semibold text-gray-800 text-lg">Lampiran</h3>
+            <h3 className="font-semibold text-slate-800 text-lg">Lampiran</h3>
 
             {attachmentError && <p className="text-sm text-red-600 mt-2">{attachmentError}</p>}
 
@@ -269,11 +367,10 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
                   />
                 ))
               ) : (
-                <p className="text-sm text-gray-500 py-2">Belum ada lampiran.</p>
+                <p className="text-sm text-slate-500 py-2">Belum ada lampiran.</p>
               )}
             </div>
 
-            {/* Changed from <form> to <div> */}
             <div className="flex flex-col sm:flex-row gap-3">
               <div className="flex-grow flex gap-2">
                 <input
@@ -281,13 +378,13 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
                   value={linkUrl}
                   onChange={(e) => setLinkUrl(e.target.value)}
                   placeholder="Tempel link di sini..."
-                  className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 placeholder:text-slate-400"
                 />
                 <button
-                  type="button" // Ensure type is "button" to prevent accidental form submission
-                  onClick={handleAddLink} // Directly call the handler
+                  type="button"
+                  onClick={handleAddLink}
                   disabled={isAddingLink}
-                  className="px-4 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 text-sm font-medium transition-colors duration-200 flex-shrink-0"
+                  className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 text-sm font-medium transition-colors duration-200 flex-shrink-0 shadow-md"
                 >
                   {isAddingLink ? <Loader2 className="w-4 h-4 animate-spin" /> : "Tambah"}
                 </button>
@@ -298,10 +395,12 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
                 type="button"
                 onClick={() => fileInputRef.current.click()}
                 disabled={isUploading}
-                className="px-4 py-2.5 bg-gray-100 text-gray-800 rounded-xl hover:bg-gray-200 flex items-center justify-center disabled:opacity-50 text-sm font-medium transition-colors duration-200 flex-shrink-0"
+                className="px-5 py-2.5 bg-slate-100 text-slate-800 rounded-xl hover:bg-slate-200 flex items-center justify-center disabled:opacity-50 text-sm font-medium transition-colors duration-200 flex-shrink-0 shadow-sm"
               >
                 {isUploading ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  </>
                 ) : (
                   <Paperclip className="w-4 h-4 mr-2" />
                 )}
@@ -313,18 +412,18 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
       )}
 
       {/* Action Buttons */}
-      <div className="flex justify-end space-x-3 pt-6 border-t border-gray-100 mt-8">
+      <div className="flex justify-end space-x-3 pt-6 border-t border-slate-100 mt-8">
         <button
           type="button"
           onClick={onCancel}
-          className="px-5 py-2.5 bg-gray-100 text-gray-800 rounded-xl hover:bg-gray-200 transition-colors duration-200 text-sm font-medium"
+          className="px-5 py-2.5 bg-slate-100 text-slate-800 rounded-xl hover:bg-slate-200 transition-colors duration-200 text-sm font-medium shadow-sm"
         >
           Batal
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="px-5 py-2.5 bg-gray-900 text-white rounded-xl hover:bg-gray-800 disabled:opacity-50 transition-colors duration-200 text-sm font-medium flex items-center justify-center"
+          className="px-5 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors duration-200 text-sm font-medium flex items-center justify-center shadow-md"
         >
           {isSubmitting ? (
             <>

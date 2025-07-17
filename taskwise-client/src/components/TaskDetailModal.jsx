@@ -1,5 +1,7 @@
 "use client"
 
+import React from "react"
+
 import { useState, useEffect } from "react"
 import Modal from "./Modal" // Assuming this component exists and is styled
 import ImageLightbox from "./ImageLightbox" // Assuming this component exists and is styled
@@ -26,16 +28,16 @@ const AttachmentDisplayItem = ({ attachment, onViewImage }) => {
   const getIcon = () => {
     if (attachment.type === "image") return <ImageIcon className="w-4 h-4 text-purple-600 flex-shrink-0" />
     if (attachment.type === "link") return <LinkIcon className="w-4 h-4 text-blue-600 flex-shrink-0" />
-    return <FileIcon className="w-4 h-4 text-gray-600 flex-shrink-0" />
+    return <FileIcon className="w-4 h-4 text-slate-600 flex-shrink-0" />
   }
 
   return attachment.type === "image" ? (
     <button
       onClick={() => onViewImage(attachment.file_url)}
-      className="flex w-full items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-100 transition-colors text-left"
+      className="flex w-full items-center gap-3 p-3 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-100 transition-colors text-left"
     >
       {getIcon()}
-      <span className="text-sm text-gray-800 truncate font-medium" title={attachment.original_name}>
+      <span className="text-sm text-slate-800 truncate font-medium" title={attachment.original_name}>
         {attachment.original_name}
       </span>
     </button>
@@ -44,10 +46,10 @@ const AttachmentDisplayItem = ({ attachment, onViewImage }) => {
       href={attachment.file_url}
       target="_blank"
       rel="noopener noreferrer"
-      className="flex items-center gap-3 p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-100 transition-colors"
+      className="flex items-center gap-3 p-3 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-100 transition-colors"
     >
       {getIcon()}
-      <span className="text-sm text-gray-800 truncate font-medium" title={attachment.original_name}>
+      <span className="text-sm text-slate-800 truncate font-medium" title={attachment.original_name}>
         {attachment.original_name}
       </span>
     </a>
@@ -62,9 +64,9 @@ const ActivityItem = ({ activity }) => {
     if (description.includes("judul")) return <Pencil className="w-4 h-4 text-purple-600" />
     if (description.includes("deskripsi")) return <FileText className="w-4 h-4 text-yellow-600" />
     if (description.includes("pembaruan")) return <MessageSquare className="w-4 h-4 text-indigo-600" />
-    if (description.includes("lampiran")) return <Paperclip className="w-4 h-4 text-gray-600" />
+    if (description.includes("lampiran")) return <Paperclip className="w-4 h-4 text-slate-600" />
     if (description.includes("komentar")) return <MessageSquare className="w-4 h-4 text-indigo-600" />
-    return <Pin className="w-4 h-4 text-gray-600" />
+    return <Pin className="w-4 h-4 text-slate-600" />
   }
 
   const renderDescription = (desc) => {
@@ -74,7 +76,7 @@ const ActivityItem = ({ activity }) => {
       const fromStatus = match[1].replace(/_/g, " ")
       const toStatus = match[2].replace(/_/g, " ")
       const statusStyles = {
-        not_started: "text-gray-600 font-semibold capitalize",
+        not_started: "text-slate-600 font-semibold capitalize",
         in_progress: "text-blue-600 font-semibold capitalize",
         completed: "text-green-600 font-semibold capitalize",
         cancelled: "text-red-600 font-semibold capitalize",
@@ -89,19 +91,17 @@ const ActivityItem = ({ activity }) => {
     return desc
   }
 
-  // Removed formatActivityDate helper as the API provides relative time strings
   return (
-    <li className="flex gap-4 items-start">
-      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center">
+    <li className="flex gap-4 items-start bg-white p-4 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-all duration-200">
+      <div className="flex-shrink-0 h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center">
         {getIcon(activity.description)}
       </div>
       <div className="flex-1">
-        <p className="text-sm text-gray-800 leading-snug">
+        <p className="text-sm text-slate-800 leading-snug">
           <span className="font-semibold">{activity.user?.name || "Pengguna"}</span>{" "}
           {renderDescription(activity.description)}
         </p>
-        {/* Directly display the created_at string */}
-        <p className="text-xs text-gray-500 mt-1">{activity.created_at}</p>
+        <p className="text-xs text-slate-500 mt-1">{activity.created_at}</p>
       </div>
     </li>
   )
@@ -132,20 +132,16 @@ export default function TaskDetailModal({ isOpen, onClose, task, currentUser }) 
   if (!task) return null
 
   const formatDate = (dateString) => {
-    // Log the raw date string and the parsed date object for debugging
-    console.log("Raw due_date string:", dateString)
     const date = new Date(dateString)
-    console.log("Parsed Date object for due_date:", date)
-
     if (!dateString || isNaN(date.getTime())) {
-      return "N/A" // Return N/A if the date string is empty/null or parsing results in an invalid date
+      return "N/A"
     }
     return date.toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })
   }
 
   const StatusBadge = ({ status }) => {
     const statusConfig = {
-      not_started: { label: "Belum Dimulai", color: "bg-gray-100 text-gray-700 border-gray-200" },
+      not_started: { label: "Belum Dimulai", color: "bg-slate-100 text-slate-700 border-slate-200" },
       in_progress: { label: "Dikerjakan", color: "bg-blue-100 text-blue-700 border-blue-200" },
       completed: { label: "Selesai", color: "bg-green-100 text-green-700 border-green-200" },
       cancelled: { label: "Dibatalkan", color: "bg-red-100 text-red-700 border-red-200" },
@@ -165,42 +161,44 @@ export default function TaskDetailModal({ isOpen, onClose, task, currentUser }) 
           {/* Task Details Section */}
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-4">
-              <h3 className="text-2xl font-semibold text-gray-900 leading-tight">{task.title}</h3>
+              <h3 className="text-2xl font-semibold text-slate-900 leading-tight break-words max-w-[calc(100%-120px)]">
+                {task.title}
+              </h3>
               <StatusBadge status={task.status} />
             </div>
-            <p className="text-gray-700 whitespace-pre-wrap text-sm leading-relaxed">
+            <p className="text-slate-700 whitespace-pre-wrap text-sm leading-relaxed break-words">
               {task.description || "Tidak ada deskripsi."}
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm border-t border-gray-100 pt-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm border-t border-slate-100 pt-6">
               <div>
-                <label className="font-medium text-gray-500 flex items-center gap-2 mb-1">
-                  <Calendar className="w-4 h-4 text-gray-400" /> Jatuh Tempo
+                <label className="font-medium text-slate-500 flex items-center gap-2 mb-1">
+                  <Calendar className="w-4 h-4 text-slate-400" /> Jatuh Tempo
                 </label>
-                <p className="text-gray-800">{formatDate(task.due_date)}</p>
+                <p className="text-slate-800 text-xs">{formatDate(task.due_date)}</p>
               </div>
               <div>
-                <label className="font-medium text-gray-500 flex items-center gap-2 mb-1">
-                  <User className="w-4 h-4 text-gray-400" /> Dibuat Oleh
+                <label className="font-medium text-slate-500 flex items-center gap-2 mb-1">
+                  <User className="w-4 h-4 text-slate-400" /> Dibuat Oleh
                 </label>
-                <p className="text-gray-800">{task.user?.name}</p>
+                <p className="text-slate-800 text-xs">{task.user?.name}</p>
               </div>
               <div>
-                <label className="font-medium text-gray-500 flex items-center gap-2 mb-1">
-                  <Users className="w-4 h-4 text-gray-400" /> Kolaborator
+                <label className="font-medium text-slate-500 flex items-center gap-2 mb-1">
+                  <Users className="w-4 h-4 text-slate-400" /> Kolaborator
                 </label>
-                <div className="flex flex-wrap gap-2 mt-1">
+                <div className="grid grid-cols-[1fr_auto] gap-x-2 gap-y-0.5 mt-0.5 text-[0.625rem]">
                   {task.collaborators?.length > 0 ? (
                     task.collaborators.map((c) => (
-                      <span
-                        key={c.id}
-                        className="bg-gray-100 text-gray-800 px-2.5 py-1 text-xs rounded-full font-medium"
-                      >
-                        {c.name} ({c.permission})
-                      </span>
+                      <React.Fragment key={c.id}>
+                        <span className="font-medium text-slate-800 break-words" title={c.name}>
+                          {c.name}
+                        </span>
+                        <span className="text-slate-500">({c.permission})</span>
+                      </React.Fragment>
                     ))
                   ) : (
-                    <span className="text-gray-500 text-xs">Tidak ada kolaborator.</span>
+                    <span className="text-slate-500 text-xs col-span-2">Tidak ada kolaborator.</span>
                   )}
                 </div>
               </div>
@@ -210,9 +208,9 @@ export default function TaskDetailModal({ isOpen, onClose, task, currentUser }) 
           {/* Attachments Section */}
           {task.attachments && task.attachments.length > 0 && (
             <>
-              <hr className="border-t border-gray-100" />
+              <hr className="border-t border-slate-100" />
               <div className="space-y-4">
-                <h4 className="font-semibold text-gray-800 text-lg">Lampiran</h4>
+                <h4 className="font-semibold text-slate-800 text-lg">Lampiran</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {task.attachments.map((att) => (
                     <AttachmentDisplayItem key={att.id} attachment={att} onViewImage={setLightboxImage} />
@@ -223,16 +221,16 @@ export default function TaskDetailModal({ isOpen, onClose, task, currentUser }) 
           )}
 
           {/* Comments Section */}
-          <hr className="border-t border-gray-100" />
+          <hr className="border-t border-slate-100" />
           <CommentSection taskId={task.id} currentUser={currentUser} task={task} />
 
           {/* Activity History Section */}
-          <hr className="border-t border-gray-100" />
+          <hr className="border-t border-slate-100" />
           <div className="space-y-4">
-            <h4 className="font-semibold text-gray-800 text-lg">Riwayat Aktivitas</h4>
+            <h4 className="font-semibold text-slate-800 text-lg">Riwayat Aktivitas</h4>
             {isLoadingActivities ? (
-              <div className="flex items-center justify-center py-4 text-gray-500">
-                <div className="w-5 h-5 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin mr-2"></div>
+              <div className="flex items-center justify-center py-4 text-slate-500">
+                <div className="w-5 h-5 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin mr-2"></div>
                 <span>Memuat riwayat...</span>
               </div>
             ) : activities.length > 0 ? (
@@ -242,7 +240,7 @@ export default function TaskDetailModal({ isOpen, onClose, task, currentUser }) 
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-gray-500">Tidak ada riwayat aktivitas.</p>
+              <p className="text-sm text-slate-500">Tidak ada riwayat aktivitas.</p>
             )}
           </div>
         </div>

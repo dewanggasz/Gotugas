@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { getStatistics, getUsers } from "../services/api"
-import SummaryCard from "../components/SummaryCard"
+import { useState, useEffect, useRef } from "react"
+import { getStatistics, getUsers } from "../services/api" // Adjust path if necessary
+import SummaryCard from "../components/SummaryCard" // Adjust path if necessary
 import {
   BarChart,
   Bar,
@@ -15,17 +15,92 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  AreaChart, // Import AreaChart
+  Area, // Import Area
 } from "recharts"
+import { BarChart3, Users, ChevronDown, User } from "lucide-react" // Import Lucide icons for consistency
+
+// Re-using CustomSelect from tasks-page for consistency
+const CustomSelect = ({ options, value, onChange, placeholder, icon: Icon, className = "" }) => {
+  const [isOpen, setIsOpen] = useState(false)
+  const selectRef = useRef(null)
+
+  const selectedOption = options.find((option) => option.value === value)
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (selectRef.current && !selectRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+    }
+  }, [])
+
+  const handleOptionClick = (optionValue) => {
+    onChange(optionValue)
+    setIsOpen(false)
+  }
+
+  return (
+    <div className={`relative ${className}`} ref={selectRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-3 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:bg-slate-50 hover:border-slate-400 group min-h-[40px]"
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+      >
+        <span className="flex items-center gap-2">
+          {Icon && <Icon className="h-4 w-4 text-slate-500 group-hover:text-slate-700 transition-colors" />}
+          <span className="font-medium text-slate-700 text-sm truncate">
+            {selectedOption ? selectedOption.label : placeholder}
+          </span>
+        </span>
+        <ChevronDown
+          className={`h-4 w-4 text-slate-400 transition-all duration-200 group-hover:text-slate-600 flex-shrink-0 ${
+            isOpen ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      {isOpen && (
+        <ul
+          className="absolute z-30 w-full bg-white border border-slate-300 rounded-lg shadow-lg mt-1 max-h-60 overflow-auto"
+          role="listbox"
+        >
+          {options.map((option) => (
+            <li
+              key={option.value}
+              onClick={() => handleOptionClick(option.value)}
+              className={`px-3 py-2.5 text-sm cursor-pointer transition-all duration-150 first:rounded-t-lg last:rounded-b-lg ${
+                option.value === value
+                  ? "bg-blue-50 font-semibold text-blue-900 border-l-3 border-blue-500"
+                  : "text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+              }`}
+              role="option"
+              aria-selected={option.value === value}
+            >
+              {option.label}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
 
 const ChartCard = ({ title, children, isLoading, className = "" }) => (
   <div
-    className={`bg-white border border-gray-100 rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm hover:shadow-md transition-shadow duration-200 ${className}`}
+    className={`bg-white border border-slate-200 rounded-xl p-4 sm:p-6 shadow-sm hover:shadow-md transition-shadow duration-200 ${className}`}
   >
-    <h3 className="text-base sm:text-lg font-medium text-gray-900 mb-4 sm:mb-6 tracking-tight">{title}</h3>
+    <h3 className="text-base sm:text-lg font-semibold text-slate-900 mb-4 sm:mb-6 tracking-tight">{title}</h3>
     {isLoading ? (
       <div className="h-64 sm:h-80 flex items-center justify-center">
-        <div className="flex items-center space-x-2 text-gray-500">
-          <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+        <div className="flex items-center space-x-2 text-slate-500">
+          <div className="w-4 h-4 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin"></div>
           <span className="text-sm font-medium">Memuat grafik...</span>
         </div>
       </div>
@@ -42,10 +117,10 @@ const ChartCard = ({ title, children, isLoading, className = "" }) => (
 const FilterButton = ({ value, label, isActive, onClick }) => (
   <button
     onClick={onClick}
-    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-xl transition-all duration-200 whitespace-nowrap ${
+    className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
       isActive
-        ? "bg-gray-900 text-white shadow-sm"
-        : "bg-gray-50 text-gray-700 hover:bg-gray-100 border border-gray-200"
+        ? "bg-blue-600 text-white shadow-sm"
+        : "bg-white text-slate-700 hover:bg-blue-50 border border-slate-300 hover:border-blue-200"
     }`}
   >
     {label}
@@ -108,15 +183,54 @@ export default function StatisticsPage({ currentUser }) {
   const statusData = dashboardData?.status_composition?.filter((item) => item.value > 0) || []
   const performanceData = dashboardData?.performance || []
 
+  // Define vibrant colors for charts
+  const PIE_COLORS = {
+    not_started: "#64748b", // slate-500
+    in_progress: "#3b82f6", // blue-500
+    completed: "#22c55e", // green-500
+    cancelled: "#ef4444", // red-500
+    unknown: "#cccccc", // Fallback color for unknown status
+  }
+
+  const PERFORMANCE_COLORS = {
+    completed: "#22c55e", // green-500
+    in_progress: "#3b82f6", // blue-500
+    not_started: "#64748b", // slate-500
+    overdue: "#f59e0b", // amber-500
+    cancelled: "#ef4444", // red-500
+  }
+
+  // Helper for status labels and robust key generation
+  const statusLabels = {
+    not_started: "Belum Dimulai",
+    in_progress: "Dikerjakan",
+    completed: "Selesai",
+    cancelled: "Dibatalkan",
+    unknown: "Tidak Diketahui", // Add a label for unknown status
+  }
+
+  // Map status data to colors and labels for the Pie Chart
+  const coloredStatusData = statusData.map((item) => {
+    const rawStatusName = item.name
+    // Convert status name to a consistent key (lowercase, replace spaces with underscores)
+    const statusKey = rawStatusName ? rawStatusName.toLowerCase().replace(/ /g, "_") : "unknown"
+
+    return {
+      ...item,
+      label: statusLabels[statusKey] || rawStatusName || "Tidak Diketahui", // Use predefined label or fallback to original name
+      fill: PIE_COLORS[statusKey] || "#cccccc", // Use statusKey for color lookup, with a fallback
+    }
+  })
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-8">
         {/* Header Section */}
         <div className="mb-8 sm:mb-12">
           <div className="flex flex-col space-y-4 lg:space-y-0 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
             <div className="text-center lg:text-left">
-              <h1 className="text-2xl sm:text-3xl font-light text-gray-900 tracking-tight mb-2">Statistik Dashboard</h1>
-              <p className="text-gray-600 text-sm">Analisis performa dan tren aktivitas</p>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight mb-2">Statistik Dashboard</h1>
+              <p className="text-slate-600 text-sm">Analisis performa dan tren aktivitas</p>
             </div>
 
             {/* Period Filters - Mobile Optimized */}
@@ -140,47 +254,46 @@ export default function StatisticsPage({ currentUser }) {
 
           {/* Admin User Selection - Mobile Optimized */}
           {currentUser?.role === "admin" && (
-            <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-white border border-gray-100 rounded-2xl">
-              <label className="block text-sm font-medium text-gray-900 mb-3">Filter berdasarkan pengguna</label>
-              <select
+            <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+              <label className="block text-sm font-medium text-slate-900 mb-3">Filter berdasarkan pengguna</label>
+              <CustomSelect
+                options={[
+                  { value: "", label: "Semua Pengguna", icon: Users },
+                  ...users.map((user) => ({ value: user.id, label: user.name, icon: User })),
+                ]}
                 value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200"
-              >
-                <option value="">Semua Pengguna</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedUserId}
+                placeholder="Pilih Pengguna"
+                icon={Users}
+                className="w-full"
+              />
             </div>
           )}
 
           {/* Custom Date Range - Mobile Optimized */}
           {period === "custom" && (
-            <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-white border border-gray-100 rounded-2xl">
-              <p className="text-sm font-medium text-gray-900 mb-4">Rentang Tanggal Kustom</p>
+            <div className="mt-4 sm:mt-6 p-4 sm:p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
+              <p className="text-sm font-medium text-slate-900 mb-4">Rentang Tanggal Kustom</p>
               <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-end sm:space-x-4">
                 <div className="flex-1">
-                  <label className="block text-xs text-gray-500 mb-1">Tanggal Mulai</label>
+                  <label className="block text-xs text-slate-500 mb-1">Tanggal Mulai</label>
                   <input
                     type="date"
                     name="start_date"
                     value={customRange.start_date}
                     onChange={handleCustomRangeChange}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                   />
                 </div>
-                <div className="hidden sm:block text-gray-400 pb-2">—</div>
+                <div className="hidden sm:block text-slate-400 pb-2">—</div>
                 <div className="flex-1">
-                  <label className="block text-xs text-gray-500 mb-1">Tanggal Akhir</label>
+                  <label className="block text-xs text-slate-500 mb-1">Tanggal Akhir</label>
                   <input
                     type="date"
                     name="end_date"
                     value={customRange.end_date}
                     onChange={handleCustomRangeChange}
-                    className="w-full px-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white"
                   />
                 </div>
               </div>
@@ -191,13 +304,13 @@ export default function StatisticsPage({ currentUser }) {
         {/* Loading State */}
         {isLoading && !dashboardData ? (
           <div className="flex items-center justify-center py-16 sm:py-20">
-            <div className="flex items-center space-x-3 text-gray-500">
-              <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+            <div className="flex items-center space-x-3 text-slate-500">
+              <div className="w-6 h-6 border-2 border-slate-300 border-t-blue-600 rounded-full animate-spin"></div>
               <span className="text-base sm:text-lg font-medium">Memuat dashboard...</span>
             </div>
           </div>
         ) : error ? (
-          <div className="p-6 sm:p-8 bg-red-50 border border-red-100 rounded-2xl">
+          <div className="p-6 sm:p-8 bg-red-50 border border-red-200 rounded-xl shadow-sm">
             <p className="text-red-600 font-medium text-sm sm:text-base">{error}</p>
           </div>
         ) : (
@@ -220,7 +333,7 @@ export default function StatisticsPage({ currentUser }) {
               {/* Trend Chart - Mobile First */}
               <div className="lg:col-span-3">
                 <ChartCard title="Tren Pembuatan Tugas" isLoading={isLoading}>
-                  <BarChart
+                  <AreaChart
                     data={trendData}
                     margin={{
                       top: 20,
@@ -229,7 +342,13 @@ export default function StatisticsPage({ currentUser }) {
                       bottom: 20,
                     }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                    <defs>
+                      <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                     <XAxis
                       dataKey="name"
                       tick={{ fontSize: 10, fill: "#64748b" }}
@@ -250,14 +369,24 @@ export default function StatisticsPage({ currentUser }) {
                     <Tooltip
                       contentStyle={{
                         backgroundColor: "white",
-                        border: "1px solid #e2e8f0",
-                        borderRadius: "12px",
-                        boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                        border: "1px solid #cbd5e1",
+                        borderRadius: "8px",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
                         fontSize: "12px",
                       }}
+                      labelStyle={{ color: "#334155", fontWeight: 600 }}
+                      itemStyle={{ color: "#475569" }}
                     />
-                    <Bar dataKey="Tugas Dibuat" fill="#1f2937" radius={[2, 2, 0, 0]} />
-                  </BarChart>
+                    <Area
+                      type="monotone"
+                      dataKey="Tugas Dibuat"
+                      stroke="#3b82f6"
+                      fill="url(#colorUv)"
+                      strokeWidth={2}
+                      dot={{ r: 4, fill: "#3b82f6", stroke: "#fff", strokeWidth: 2 }}
+                      activeDot={{ r: 6, fill: "#3b82f6", stroke: "#fff", strokeWidth: 2 }}
+                    />
+                  </AreaChart>
                 </ChartCard>
               </div>
 
@@ -302,17 +431,10 @@ export default function StatisticsPage({ currentUser }) {
                       />
                     </PieChart>
                   ) : (
-                    <div className="flex items-center justify-center h-full text-gray-400">
+                    <div className="flex items-center justify-center h-full text-slate-400">
                       <div className="text-center">
-                        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.5}
-                              d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                            />
-                          </svg>
+                        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-100 flex items-center justify-center">
+                          <BarChart3 className="w-6 h-6 text-slate-400" />
                         </div>
                         <p className="text-sm font-medium">Tidak ada data</p>
                       </div>
@@ -340,7 +462,7 @@ export default function StatisticsPage({ currentUser }) {
                               bottom: 20,
                             }}
                           >
-                            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" horizontal={false} />
                             <XAxis
                               type="number"
                               allowDecimals={false}
@@ -359,11 +481,13 @@ export default function StatisticsPage({ currentUser }) {
                             <Tooltip
                               contentStyle={{
                                 backgroundColor: "white",
-                                border: "1px solid #e2e8f0",
-                                borderRadius: "12px",
-                                boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+                                border: "1px solid #cbd5e1",
+                                borderRadius: "8px",
+                                boxShadow: "0 2px 4px rgba(0,0,0,0.08)",
                                 fontSize: "12px",
                               }}
+                              labelStyle={{ color: "#334155", fontWeight: 600 }}
+                              itemStyle={{ color: "#475569" }}
                             />
                             <Legend
                               wrapperStyle={{
@@ -373,27 +497,25 @@ export default function StatisticsPage({ currentUser }) {
                               }}
                             />
 
-                            <Bar dataKey="Selesai" stackId="a" fill="#10b981" radius={[0, 2, 2, 0]} />
-                            <Bar dataKey="Dikerjakan" stackId="a" fill="#3b82f6" />
-                            <Bar dataKey="Belum Dimulai" stackId="a" fill="#6b7280" />
-                            <Bar dataKey="Terlambat" stackId="a" fill="#f59e0b" />
-                            <Bar dataKey="Dibatalkan" stackId="a" fill="#ef4444" />
+                            <Bar
+                              dataKey="Selesai"
+                              stackId="a"
+                              fill={PERFORMANCE_COLORS.completed}
+                              radius={[0, 4, 4, 0]}
+                            />
+                            <Bar dataKey="Dikerjakan" stackId="a" fill={PERFORMANCE_COLORS.in_progress} />
+                            <Bar dataKey="Belum Dimulai" stackId="a" fill={PERFORMANCE_COLORS.not_started} />
+                            <Bar dataKey="Terlambat" stackId="a" fill={PERFORMANCE_COLORS.overdue} />
+                            <Bar dataKey="Dibatalkan" stackId="a" fill={PERFORMANCE_COLORS.cancelled} />
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
                     </div>
                   ) : (
-                    <div className="flex items-center justify-center h-full text-gray-400">
+                    <div className="flex items-center justify-center h-full text-slate-400">
                       <div className="text-center">
-                        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
-                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.5}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          </svg>
+                        <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-slate-100 flex items-center justify-center">
+                          <Users className="w-6 h-6 text-slate-400" />
                         </div>
                         <p className="text-sm font-medium">Tidak ada data performa</p>
                       </div>

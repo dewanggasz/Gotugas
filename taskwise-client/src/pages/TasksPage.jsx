@@ -433,8 +433,8 @@ const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
                     <CollaboratorAvatars collaborators={task.collaborators} creator={task.user} />
                   </td>
                   <td className="px-3 py-3 w-[120px]">
-                    <div className="flex items-center gap-2">
-                      <Avatar user={task.user} size="sm" />
+                    <div className="flex items-center">
+                      
                       <span className="text-xs font-medium text-slate-700 truncate" title={task.user?.name}>
                         {task.user?.name}
                       </span>
