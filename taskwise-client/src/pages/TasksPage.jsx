@@ -162,7 +162,7 @@ const Pagination = ({ meta, onPageChange }) => {
           <div className="flex items-center space-x-1">
             {getVisiblePages().map((page, index) =>
               page === "..." ? (
-                <span key={index} className="px-2 py-2 text-slate-400 font-medium text-sm">
+                <span key={`dot-${index}`} className="px-2 py-2 text-slate-400 font-medium text-sm">
                   ...
                 </span>
               ) : (
