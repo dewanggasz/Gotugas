@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Menu, LogOut, User, X, BarChart3, CheckSquare, ChevronDown, ShieldCheck } from "lucide-react" // <-- PERUBAHAN: Menambahkan ikon ShieldCheck
+import { Menu, LogOut, User, X, BarChart3, CheckSquare, ChevronDown, ShieldCheck } from "lucide-react"
 
 export default function ClientLayout({ activePage, setActivePage, onLogout, currentUser, children }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -20,6 +20,7 @@ export default function ClientLayout({ activePage, setActivePage, onLogout, curr
     }
   }, [profileRef])
 
+  // Close mobile menu on escape key
   useEffect(() => {
     function handleEscape(event) {
       if (event.key === "Escape") {
@@ -45,14 +46,20 @@ export default function ClientLayout({ activePage, setActivePage, onLogout, curr
       icon: CheckSquare,
     },
   ]
-  
-  // <-- PERUBAHAN: Menambahkan item navigasi untuk admin
-  const adminNavigationItem = {
-      id: "userManagement",
-      label: "Pengguna",
-      icon: ShieldCheck,
-  };
 
+  // Add admin navigation item conditionally
+  const adminNavigationItems =
+    currentUser?.role === "admin"
+      ? [
+          {
+            id: "userManagement",
+            label: "Pengguna",
+            icon: ShieldCheck,
+          },
+        ]
+      : []
+
+  const allNavigationItems = [...navigationItems, ...adminNavigationItems]
 
   const NavLink = ({ item, isMobile = false }) => {
     const Icon = item.icon
@@ -84,32 +91,34 @@ export default function ClientLayout({ activePage, setActivePage, onLogout, curr
           <div className="flex justify-between items-center h-14">
             {/* Logo */}
             <div className="flex-shrink-0">
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight">TaskWise</h1>
+              <h1 className="text-xl font-bold text-slate-900 tracking-tight hover:text-blue-600 transition-colors duration-200 cursor-default">
+                TaskWise
+              </h1>
             </div>
 
             {/* Desktop Navigation */}
             <div className="hidden md:flex items-center space-x-4">
               <nav className="flex items-center space-x-1">
-                {navigationItems.map((item) => (
+                {allNavigationItems.map((item) => (
                   <NavLink key={item.id} item={item} />
                 ))}
-                {/* <-- PERUBAHAN: Menampilkan tautan admin secara kondisional */}
-                {currentUser?.role === 'admin' && <NavLink item={adminNavigationItem} />}
               </nav>
 
               {/* Profile Dropdown */}
               <div className="relative" ref={profileRef}>
                 <button
                   onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 transition-colors duration-200 group"
+                  className="flex items-center space-x-2 p-1.5 rounded-lg hover:bg-slate-50 transition-all duration-200 group hover:shadow-sm"
                 >
                   <img
                     src={currentUser?.profile_photo_url || "/placeholder.svg"}
                     alt={currentUser?.name || "User"}
-                    className="h-8 w-8 rounded-full object-cover ring-1 ring-slate-200 shadow-sm"
+                    className="h-8 w-8 rounded-full object-cover ring-2 ring-slate-200 shadow-sm group-hover:ring-blue-300 transition-all duration-200"
                   />
                   <div className="hidden lg:block text-left">
-                    <p className="text-sm font-medium text-slate-900">{currentUser?.name}</p>
+                    <p className="text-sm font-medium text-slate-900 group-hover:text-blue-600 transition-colors">
+                      {currentUser?.name}
+                    </p>
                     <p className="text-xs text-slate-500">{currentUser?.email}</p>
                   </div>
                   <ChevronDown
@@ -212,11 +221,9 @@ export default function ClientLayout({ activePage, setActivePage, onLogout, curr
 
             {/* Navigation */}
             <nav className="flex-1 p-4 space-y-1">
-              {navigationItems.map((item) => (
+              {allNavigationItems.map((item) => (
                 <NavLink key={item.id} item={item} isMobile={true} />
               ))}
-              {/* <-- PERUBAHAN: Menampilkan tautan admin secara kondisional di mobile */}
-              {currentUser?.role === 'admin' && <NavLink item={adminNavigationItem} isMobile={true} />}
               <button
                 onClick={() => {
                   setActivePage("profile")

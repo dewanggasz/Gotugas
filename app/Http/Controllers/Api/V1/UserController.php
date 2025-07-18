@@ -17,11 +17,23 @@ class UserController extends Controller
      * Display a listing of the resource.
      * Mengembalikan daftar semua pengguna untuk dropdown filter statistik.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Ambil hanya pengguna dengan peran 'employee', lalu urutkan berdasarkan nama.
-        // Ini memastikan admin tidak muncul di dalam daftar filternya sendiri.
-        $users = User::where('role', 'employee')->orderBy('name')->get();
+        // Cek apakah permintaan ini untuk paginasi (dari UserManagementPage)
+        if ($request->has('page')) {
+            // Otorisasi: Hanya admin yang bisa melihat daftar terpaginasi
+            if (!$request->user()->isAdmin()) {
+                abort(403, 'Akses ditolak.');
+            }
+            
+            // Kembalikan SEMUA pengguna dengan paginasi
+            $perPage = $request->input('per_page', 10);
+            $users = User::orderBy('name')->paginate($perPage);
+        } else {
+            // Jika tidak ada 'page', anggap ini untuk dropdown (dari TasksPage)
+            // Kembalikan HANYA employee tanpa paginasi
+            $users = User::where('role', 'employee')->orderBy('name')->get();
+        }
 
         return UserResource::collection($users);
     }
