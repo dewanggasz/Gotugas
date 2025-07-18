@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\UserController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\StatisticsController;
 use App\Http\Controllers\Api\V1\TaskCommentController;
+use App\Http\Controllers\Api\V1\JournalController;
 use App\Http\Controllers\Api\V1\TaskAttachmentController;
 use App\Http\Resources\Api\V1\UserResource;
 use Illuminate\Http\Request;
@@ -62,6 +63,11 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
 
     // Rute Statistik
     Route::get('statistics', [StatisticsController::class, 'index']);
+
+    // --- RUTE UNTUK JURNAL PRIBADI ---
+    Route::get('journals', [JournalController::class, 'index']);
+    Route::get('journals/{date}', [JournalController::class, 'showByDate']);
+    Route::post('journals', [JournalController::class, 'storeOrUpdate']);
 
     // Rute Tugas & Aktivitas
     Route::get('tasks/summary', [TaskController::class, 'summary']);
