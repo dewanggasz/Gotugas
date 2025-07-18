@@ -13,6 +13,7 @@ use App\Jobs\SendTaskAssignedNotification;
 use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 
 class TaskController extends Controller
 {
@@ -29,24 +30,30 @@ class TaskController extends Controller
 
         $selectedUserId = $request->input('user_id');
 
-        if ($user->isAdmin() && $selectedUserId && $selectedUserId !== 'all') {
-            // Jika admin memfilter berdasarkan pengguna tertentu, cari tugas yang dibuat oleh
-            // pengguna tersebut atau di mana pengguna tersebut adalah kolaborator.
-            $query->where(function ($q) use ($selectedUserId) {
-                $q->where('user_id', $selectedUserId)
-                  ->orWhereHas('collaborators', function ($subQ) use ($selectedUserId) {
-                      $subQ->where('users.id', $selectedUserId);
-                  });
-            });
-        } else if (!$user->isAdmin()) {
-            // Logika yang sudah ada untuk pengguna non-admin
-            $query->where(function ($q) use ($user) {
+        if ($user->role === 'semi_admin') {
+            // Semi Admin melihat tugasnya sendiri, atau tugas yang dibuat oleh employee/semi_admin lain
+            $query->where(function (Builder $q) use ($user) {
                 $q->where('user_id', $user->id)
-                  ->orWhereHas('collaborators', function ($subQ) use ($user) {
-                      $subQ->where('users.id', $user->id);
-                  });
+                  ->orWhereHas('collaborators', fn(Builder $subQ) => $subQ->where('users.id', $user->id))
+                  ->orWhereHas('user', fn(Builder $subQ) => $subQ->whereIn('role', ['employee', 'semi_admin']));
+            });
+        } elseif ($user->role === 'employee') {
+            // Employee hanya melihat tugas yang terkait dengannya
+            $query->where(function (Builder $q) use ($user) {
+                $q->where('user_id', $user->id)
+                  ->orWhereHas('collaborators', fn(Builder $subQ) => $subQ->where('users.id', $user->id));
             });
         }
+        // Jika peran adalah 'admin', tidak perlu filter awal karena mereka bisa melihat semua.
+
+        // Langkah 2: Terapkan filter pengguna jika ada (hanya untuk admin dan semi_admin)
+        if ($user->hasAdminPrivileges() && $selectedUserId && $selectedUserId !== 'all') {
+            $query->where(function (Builder $q) use ($selectedUserId) {
+                $q->where('user_id', $selectedUserId)
+                  ->orWhereHas('collaborators', fn(Builder $subQ) => $subQ->where('users.id', $selectedUserId));
+            });
+        }
+        
 
         if ($request->filled('status') && $request->status !== 'all') {
             $query->where('status', $request->status);

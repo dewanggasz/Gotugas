@@ -560,14 +560,13 @@ export default function TasksPage({ currentUser }) {
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
-        const usersResponse = await getUsers()
-        setUsers(usersResponse.data.data.filter((u) => u.role !== "admin"))
+        const usersResponse = await getUsers() // getUsers() sudah cerdas
+        setUsers(usersResponse.data.data)
       } catch (err) {
         console.error("Gagal memuat daftar pengguna", err)
-        setError("Gagal memuat daftar pengguna.")
       }
     }
-    if (currentUser) {
+    if (currentUser?.role === 'admin' || currentUser?.role === 'semi_admin') {
       fetchAllUsers()
     }
   }, [currentUser])
@@ -781,7 +780,7 @@ export default function TasksPage({ currentUser }) {
 
             {/* Enhanced Filters with proper sizing */}
             <div className="flex flex-col sm:flex-row gap-3 xl:flex-none">
-              {currentUser?.role === "admin" && (
+              {(currentUser?.role === "admin" || currentUser?.role === "semi_admin") && (
                 <CustomSelect
                   options={userFilterOptions}
                   value={selectedUserId}

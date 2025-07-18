@@ -22,7 +22,7 @@ class UserController extends Controller
     {
         // Cek apakah permintaan ini untuk paginasi (dari UserManagementPage)
         if ($request->has('page')) {
-            if (!$request->user()->isAdmin()) {
+            if (!$request->user()->hasAdminPrivileges()) {
                 abort(403, 'Akses ditolak.');
             }
             
@@ -48,7 +48,7 @@ class UserController extends Controller
                 default => $query->orderBy('name', 'asc'), // default: name_asc
             };
 
-            $perPage = $request->input('per_page', 5);
+            $perPage = $request->input('per_page', 10);
             $users = $query->paginate($perPage);
 
         } else {
@@ -64,7 +64,7 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
-        if (!$request->user()->isAdmin()) {
+        if (!$request->user()->hasAdminPrivileges()) {
             abort(403, 'Hanya admin yang dapat membuat pengguna baru.');
         }
 
@@ -92,7 +92,7 @@ class UserController extends Controller
      */
      public function update(Request $request, User $user)
     {
-        if (!$request->user()->isAdmin()) {
+        if (!$request->user()->hasAdminPrivileges()) {
             abort(403, 'Hanya admin yang dapat memperbarui pengguna.');
         }
 
@@ -132,7 +132,7 @@ class UserController extends Controller
     public function show(Request $request, User $user)
     {
         // Otorisasi: Hanya admin yang bisa melihat detail pengguna
-        if (!$request->user()->isAdmin()) {
+        if (!$request->user()->hasAdminPrivileges()) {
             abort(403, 'Akses ditolak.');
         }
         return new UserResource($user);
@@ -145,7 +145,7 @@ class UserController extends Controller
     public function destroy(Request $request, User $user)
     {
         // Otorisasi: Hanya admin yang bisa menghapus pengguna
-        if (!$request->user()->isAdmin()) {
+        if (!$request->user()->hasAdminPrivileges()) {
             abort(403, 'Hanya admin yang dapat menghapus pengguna.');
         }
 
