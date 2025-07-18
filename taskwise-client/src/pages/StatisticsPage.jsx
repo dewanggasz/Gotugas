@@ -142,7 +142,7 @@ export default function StatisticsPage({ currentUser }) {
   const [selectedUserId, setSelectedUserId] = useState("")
 
   useEffect(() => {
-    if (currentUser?.role === "admin") {
+    if (currentUser?.role === "admin" || currentUser?.role === "semi_admin") {
       getUsers()
         .then((res) => setUsers(res.data.data))
         .catch(console.error)
@@ -159,7 +159,7 @@ export default function StatisticsPage({ currentUser }) {
           params.start_date = customRange.start_date
           params.end_date = customRange.end_date
         }
-        if (currentUser?.role === "admin" && selectedUserId) {
+        if ((currentUser?.role === "admin" || currentUser?.role === "semi_admin") && selectedUserId) {
           params.user_id = selectedUserId
         }
         const response = await getStatistics(params)
@@ -253,7 +253,7 @@ export default function StatisticsPage({ currentUser }) {
           </div>
 
           {/* Admin User Selection - Mobile Optimized */}
-          {currentUser?.role === "admin" && (
+          {(currentUser?.role === "admin" || currentUser?.role === "semi_admin") && (
             <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-white border border-slate-200 rounded-xl shadow-sm">
               <label className="block text-sm font-medium text-slate-900 mb-3">Filter berdasarkan pengguna</label>
               <CustomSelect
@@ -445,7 +445,7 @@ export default function StatisticsPage({ currentUser }) {
             </div>
 
             {/* Performance Chart (Admin Only) - Mobile Optimized */}
-            {currentUser?.role === "admin" && (
+            {(currentUser?.role === "admin" || currentUser?.role === "semi_admin") && (
               <div>
                 <ChartCard title="Performa Individual" isLoading={isLoading}>
                   {performanceData.length > 0 ? (

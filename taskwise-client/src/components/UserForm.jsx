@@ -178,6 +178,7 @@ const UserForm = ({ isOpen, onClose, onSubmit, initialData }) => {
                 label="Peran"
               >
                 <option value="employee">Employee</option>
+                <option value="semi_admin">Semi Admin</option>
                 <option value="admin">Admin</option>
               </FormSelect>
               <FormInput

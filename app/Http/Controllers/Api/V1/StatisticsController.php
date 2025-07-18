@@ -22,7 +22,6 @@ class StatisticsController extends Controller
         $period = $request->input('period', '30d');
         $endDate = now();
 
-        // Tentukan rentang tanggal berdasarkan input
         if ($period === 'custom') {
             $request->validate(['start_date' => 'required|date', 'end_date' => 'required|date|after_or_equal:start_date']);
             $startDate = Carbon::parse($request->input('start_date'));
@@ -35,40 +34,33 @@ class StatisticsController extends Controller
             $startDate = $endDate->copy()->subDays(29);
         }
 
-        // ======================= PERUBAHAN DIMULAI DI SINI =======================
-
-        // Query dasar yang akan digunakan oleh semua statistik
         $baseQuery = Task::query();
-
-        // Ambil user_id yang dipilih dari request (jika ada)
         $selectedUserId = $request->input('user_id');
 
-        // Terapkan filter berdasarkan peran dan user_id yang dipilih
-        if ($user->isAdmin() && $selectedUserId) {
-            // KASUS 1: Admin memilih pengguna spesifik dari filter.
-            // Batasi query ke tugas yang terkait dengan pengguna yang dipilih.
-            $baseQuery->where(function (Builder $q) use ($selectedUserId) {
+        if ($user->hasAdminPrivileges() && $selectedUserId) {
+            // KASUS 1: Admin atau Semi Admin memilih pengguna spesifik.
+            $baseQuery->where(function ($q) use ($selectedUserId) {
                 $q->where('user_id', $selectedUserId)
-                  ->orWhereHas('collaborators', fn(Builder $subQ) => $subQ->where('users.id', $selectedUserId));
+                  ->orWhereHas('collaborators', fn($subQ) => $subQ->where('users.id', $selectedUserId));
             });
-        } elseif (!$user->isAdmin()) {
-            // KASUS 2: Pengguna bukan admin.
-            // Batasi query ke tugas yang terkait dengan pengguna yang sedang login.
-            $baseQuery->where(function (Builder $q) use ($user) {
+        } elseif ($user->hasAdminPrivileges() && !$selectedUserId) {
+            // --- PERUBAHAN DI SINI ---
+            // KASUS 2: Admin atau Semi Admin TIDAK memilih pengguna.
+            // Ambil tugas dari semua pengguna yang BUKAN 'admin'.
+            // Ini akan secara otomatis menyertakan 'semi_admin' dan 'employee'.
+            $baseQuery->whereHas('user', function ($query) {
+                $query->where('role', '!=', 'admin');
+            });
+        } elseif (!$user->hasAdminPrivileges()) {
+            // KASUS 3: Pengguna adalah employee biasa.
+            $baseQuery->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
-                  ->orWhereHas('collaborators', fn(Builder $subQ) => $subQ->where('users.id', $user->id));
+                  ->orWhereHas('collaborators', fn($subQ) => $subQ->where('users.id', $user->id));
             });
         }
-        // KASUS 3 (Implisit): Admin TIDAK memilih pengguna.
-        // Tidak ada filter pengguna yang diterapkan, sehingga data dari semua pengguna akan diambil.
 
-        // ======================== PERUBAHAN SELESAI DI SINI ========================
-
-
-        // --- Bagian ini sedikit berbeda dari file Anda, tetapi logikanya lebih akurat ---
-        // Logika untuk performance data juga perlu menghormati filter user_id jika ada
         $performanceData = [];
-        if ($user->isAdmin()) {
+        if ($user->hasAdminPrivileges()) {
             $performanceData = $this->getPerformanceData($startDate, $endDate, $selectedUserId);
         }
 
@@ -151,7 +143,7 @@ class StatisticsController extends Controller
         if ($selectedUserId) {
             $query->where('id', $selectedUserId);
         } else {
-            $query->where('role', 'employee');
+            $query->whereIn('role', ['employee', 'semi_admin']);
         }
 
         return $query->with([
@@ -160,28 +152,11 @@ class StatisticsController extends Controller
             }
         ])->get()->map(function ($user) {
             $tasksInPeriod = $user->createdTasks;
-
-            // Memecah tugas berdasarkan statusnya
             $completed = $tasksInPeriod->where('status', 'completed')->count();
             $cancelled = $tasksInPeriod->where('status', 'cancelled')->count();
-            
-            // Tugas yang aktif (belum selesai/dibatalkan) dan sudah lewat waktu
-            $overdue = $tasksInPeriod
-                ->whereNotIn('status', ['completed', 'cancelled'])
-                ->where('due_date', '<', now())
-                ->count();
-            
-            // Tugas yang sedang dikerjakan dan belum lewat waktu
-            $inProgressOnTime = $tasksInPeriod
-                ->where('status', 'in_progress')
-                ->where(fn($q) => $q->where('due_date', '>=', now())->orWhereNull('due_date'))
-                ->count();
-
-            // Tugas yang belum dimulai dan belum lewat waktu
-            $notStartedOnTime = $tasksInPeriod
-                ->where('status', 'not_started')
-                ->where(fn($q) => $q->where('due_date', '>=', now())->orWhereNull('due_date'))
-                ->count();
+            $overdue = $tasksInPeriod->whereNotIn('status', ['completed', 'cancelled'])->where('due_date', '<', now())->count();
+            $inProgressOnTime = $tasksInPeriod->where('status', 'in_progress')->where(fn($q) => $q->where('due_date', '>=', now())->orWhereNull('due_date'))->count();
+            $notStartedOnTime = $tasksInPeriod->where('status', 'not_started')->where(fn($q) => $q->where('due_date', '>=', now())->orWhereNull('due_date'))->count();
 
             return [
                 'name' => $user->name,

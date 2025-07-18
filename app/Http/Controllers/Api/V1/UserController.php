@@ -72,8 +72,8 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Password::defaults()],
-            'role' => ['required', 'in:admin,employee'],
-            'jabatan' => ['nullable', 'string', 'max:255'], // <-- TAMBAHKAN VALIDASI
+            'role' => ['required', Rule::in(['admin', 'semi_admin', 'employee'])],
+            'jabatan' => ['nullable', 'string', 'max:255'],
         ]);
 
         $user = User::create([
@@ -99,7 +99,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-            'role' => ['required', 'in:admin,employee'],
+            'role' => ['required', Rule::in(['admin', 'semi_admin', 'employee'])],
             'password' => ['nullable', 'confirmed', Password::defaults()],
             'jabatan' => ['nullable', 'string', 'max:255'],
         ]);

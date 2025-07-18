@@ -88,4 +88,14 @@ class User extends Authenticatable implements FilamentUser
     {
         return $this->role === 'admin';
     }
+
+    public function hasAdminPrivileges(): bool
+    {
+        return in_array($this->role, ['admin', 'semi_admin']);
+    }
+
+    public function shouldBeInStatistics(): bool
+    {
+        return in_array($this->role, ['semi_admin', 'employee']);
+    }
 }

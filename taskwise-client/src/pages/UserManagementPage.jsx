@@ -76,7 +76,8 @@ const Avatar = ({ user }) => {
 const RoleBadge = ({ role }) => {
   const roleConfig = {
     admin: { label: "Admin", color: "bg-gradient-to-r from-purple-100 to-purple-200 text-purple-800 border-purple-300", icon: Crown },
-    employee: { label: "Employee", color: "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border-blue-300", icon: UserCheck },
+    semi_admin: { label: "Semi Admin", color: "bg-gradient-to-r from-amber-100 to-amber-200 text-amber-800 border-amber-300", icon: UserCheck },
+    employee: { label: "Employee", color: "bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border-blue-300", icon: User },
   }
   const config = roleConfig[role] || roleConfig.employee
   const IconComponent = config.icon
@@ -203,7 +204,7 @@ const UserManagementPage = () => {
     }
   }
   
-  const roleOptions = [ { value: 'all', label: 'Semua Peran' }, { value: 'admin', label: 'Admin' }, { value: 'employee', label: 'Employee' } ];
+  const roleOptions = [ { value: 'all', label: 'Semua Peran' }, { value: 'admin', label: 'Admin' }, { value: 'semi_admin', label: 'Semi Admin' }, { value: 'employee', label: 'Employee' } ];
   const sortOptions = [
     { value: 'name_asc', label: 'Nama (A-Z)' }, { value: 'name_desc', label: 'Nama (Z-A)' },
     { value: 'jabatan_asc', label: 'Jabatan (A-Z)' }, { value: 'jabatan_desc', label: 'Jabatan (Z-A)' },
@@ -260,6 +261,8 @@ const UserManagementPage = () => {
         <div className="relative">
           <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><Briefcase className="h-4 w-4 text-slate-400" /></div>
           <input
+            id="jabatan-filter"
+            name="jabatan_filter"
             type="text"
             placeholder="Cari berdasarkan jabatan..."
             value={jabatanFilter}
