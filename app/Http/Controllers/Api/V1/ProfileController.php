@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules\Password;
+use Illuminate\Validation\ValidationException;
 
 class ProfileController extends Controller
 {
@@ -33,6 +34,14 @@ class ProfileController extends Controller
             'current_password' => ['required', 'current_password'],
             'password' => ['required', Password::defaults(), 'confirmed'],
         ]);
+
+        // --- PERUBAHAN DI SINI: Logika Pengecekan Password ---
+        // Cek apakah password baru sama dengan yang lama (yang juga sama dengan current_password)
+        if (Hash::check($validated['password'], $request->user()->password)) {
+            throw ValidationException::withMessages([
+                'password' => ['Password baru tidak boleh sama dengan password Anda saat ini.'],
+            ]);
+        }
 
         $request->user()->update([
             'password' => Hash::make($validated['password']),

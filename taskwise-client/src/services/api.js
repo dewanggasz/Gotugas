@@ -41,12 +41,10 @@ export const uploadProfilePhoto = (photoFile) => {
  * @param {number|null} page - Nomor halaman untuk paginasi. Jika null, mengambil semua pengguna 'employee' (untuk filter).
  * @returns {Promise}
  */
-export const getUsers = (page = null) => {
-    let url = '/v1/users';
-    // Jika parameter 'page' diberikan, tambahkan ke URL untuk memicu logika paginasi di backend
-    if (page) {
-        url += `?page=${page}`;
-    }
+export const getUsers = (params = {}) => {
+    // Menggunakan URLSearchParams untuk membuat query string dari objek
+    const query = new URLSearchParams(params).toString();
+    const url = `/v1/users?${query}`;
     return apiClient.get(url);
 };
 
