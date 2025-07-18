@@ -4,10 +4,9 @@ import Layout from './components/Layout';
 import StatisticsPage from './pages/StatisticsPage';
 import TasksPage from './pages/TasksPage';
 import ProfilePage from './pages/ProfilePage';
+import UserManagementPage from './pages/UserManagementPage'; // <-- PERUBAHAN: Impor halaman baru
 import { getUser } from './services/api';
 
-// --- FUNGSI BARU ---
-// Fungsi ini akan menentukan halaman awal berdasarkan URL di browser
 const getInitialPage = () => {
   const path = window.location.pathname;
   if (path.startsWith('/tasks')) {
@@ -16,14 +15,15 @@ const getInitialPage = () => {
   if (path.startsWith('/profile')) {
     return 'profile';
   }
-  // Jika tidak cocok, gunakan nilai dari localStorage atau default ke 'statistics'
+  // <-- PERUBAHAN: Menambahkan 'userManagement' ke logika awal (opsional tapi bagus)
+  if (path.startsWith('/users')) {
+    return 'userManagement';
+  }
   return localStorage.getItem('activePage') || 'statistics';
 };
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('authToken'));
-  // --- PERUBAHAN DI SINI ---
-  // Gunakan fungsi baru untuk menentukan halaman aktif awal
   const [activePage, setActivePage] = useState(getInitialPage());
   
   const [currentUser, setCurrentUser] = useState(null);
@@ -31,7 +31,6 @@ function App() {
   const [userRefetchTrigger, setUserRefetchTrigger] = useState(0);
 
   useEffect(() => {
-    // Tetap simpan halaman aktif ke localStorage saat berubah
     localStorage.setItem('activePage', activePage);
   }, [activePage]);
 
@@ -94,6 +93,8 @@ function App() {
       {activePage === 'statistics' && <StatisticsPage currentUser={currentUser} />}
       {activePage === 'tasks' && <TasksPage currentUser={currentUser} />}
       {activePage === 'profile' && <ProfilePage currentUser={currentUser} onUpdateSuccess={handleProfileUpdate} />}
+      {/* <-- PERUBAHAN: Render halaman manajemen pengguna secara kondisional --> */}
+      {activePage === 'userManagement' && <UserManagementPage />}
     </Layout>
   );
 }

@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 
 class UserResource extends Resource
 {
@@ -40,7 +41,8 @@ class UserResource extends Resource
                     ->required(fn (string $context): bool => $context === 'create')
                     // Sembunyikan field ini saat mengedit
                     ->visible(fn (string $context): bool => $context === 'create')
-                    ->dehydrateStateUsing(fn (string $state): string => Hash::make($state)),
+                    ->dehydrateStateUsing(fn (string $state): string => Hash::make($state))
+                    ->rule(Password::defaults()),
             ]);
     }
 

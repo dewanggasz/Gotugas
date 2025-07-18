@@ -55,7 +55,7 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
         // Gunakan UserResource untuk memastikan 'role' disertakan
         return new UserResource($request->user());
     });
-    Route::get('users', [UserController::class, 'index']);
+    Route::apiResource('users', UserController::class);
     Route::post('user/photo', [ProfileController::class, 'updatePhoto']);
     Route::put('user/profile', [ProfileController::class, 'updateProfile']);
     Route::put('user/password', [ProfileController::class, 'updatePassword']);

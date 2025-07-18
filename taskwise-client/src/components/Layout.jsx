@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Menu, LogOut, User, X, BarChart3, CheckSquare, ChevronDown } from "lucide-react"
+import { Menu, LogOut, User, X, BarChart3, CheckSquare, ChevronDown, ShieldCheck } from "lucide-react" // <-- PERUBAHAN: Menambahkan ikon ShieldCheck
 
 export default function ClientLayout({ activePage, setActivePage, onLogout, currentUser, children }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -20,7 +20,6 @@ export default function ClientLayout({ activePage, setActivePage, onLogout, curr
     }
   }, [profileRef])
 
-  // Close mobile menu on escape key
   useEffect(() => {
     function handleEscape(event) {
       if (event.key === "Escape") {
@@ -46,6 +45,14 @@ export default function ClientLayout({ activePage, setActivePage, onLogout, curr
       icon: CheckSquare,
     },
   ]
+  
+  // <-- PERUBAHAN: Menambahkan item navigasi untuk admin
+  const adminNavigationItem = {
+      id: "userManagement",
+      label: "Pengguna",
+      icon: ShieldCheck,
+  };
+
 
   const NavLink = ({ item, isMobile = false }) => {
     const Icon = item.icon
@@ -86,6 +93,8 @@ export default function ClientLayout({ activePage, setActivePage, onLogout, curr
                 {navigationItems.map((item) => (
                   <NavLink key={item.id} item={item} />
                 ))}
+                {/* <-- PERUBAHAN: Menampilkan tautan admin secara kondisional */}
+                {currentUser?.role === 'admin' && <NavLink item={adminNavigationItem} />}
               </nav>
 
               {/* Profile Dropdown */}
@@ -206,6 +215,8 @@ export default function ClientLayout({ activePage, setActivePage, onLogout, curr
               {navigationItems.map((item) => (
                 <NavLink key={item.id} item={item} isMobile={true} />
               ))}
+              {/* <-- PERUBAHAN: Menampilkan tautan admin secara kondisional di mobile */}
+              {currentUser?.role === 'admin' && <NavLink item={adminNavigationItem} isMobile={true} />}
               <button
                 onClick={() => {
                   setActivePage("profile")

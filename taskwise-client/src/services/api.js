@@ -68,3 +68,7 @@ export const getTaskComments = (taskId) => {
 export const postTaskComment = (taskId, commentData) => {
     return apiClient.post(`/v1/tasks/${taskId}/comments`, commentData);
 };
+
+export const createUser = (userData) => apiClient.post('/v1/users', userData);
+export const updateUser = (id, userData) => apiClient.put(`/v1/users/${id}`, userData);
+export const deleteUser = (id) => apiClient.delete(`/v1/users/${id}`);
