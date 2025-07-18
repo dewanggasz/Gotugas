@@ -21,10 +21,16 @@ class TaskAttachmentController extends Controller
     {
         $this->authorize('update', $task);
 
-        // --- PERBAIKAN: Mengganti nama 'type' menjadi 'attachment_type' ---
         $validated = $request->validate([
             'attachment_type' => ['required', Rule::in(['file', 'image', 'link'])],
-            'file' => ['required_if:attachment_type,file,image', 'file', 'max:5120'],
+            // Ganti 'file' dengan 'mimes' yang lebih spesifik
+            'file' => [
+                'required_if:attachment_type,file,image', 
+                'file', 
+                'max:5120', // 5MB
+                // Tentukan ekstensi yang diizinkan
+                'mimes:jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,zip' 
+            ],
             'url' => ['required_if:attachment_type,link', 'url', 'max:2048'],
         ]);
 

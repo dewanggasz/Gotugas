@@ -44,7 +44,7 @@ Route::post('/login', function (Request $request) {
         'user' => $user,
         'token' => $token,
     ]);
-});
+})->middleware('throttle:login');
 
 
 // Grup rute dengan prefix v1 dan middleware sanctum untuk otentikasi
