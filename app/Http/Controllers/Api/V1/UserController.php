@@ -20,6 +20,8 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
+        /** @var \App\Models\User $loggedInUser */
+    $loggedInUser = $request->user();
         // Cek apakah permintaan ini untuk paginasi (dari UserManagementPage)
         if ($request->has('page')) {
             if (!$request->user()->hasAdminPrivileges()) {
@@ -52,9 +54,19 @@ class UserController extends Controller
             $users = $query->paginate($perPage);
 
         } else {
-            // Logika untuk dropdown (dari TasksPage, dll.)
-            $users = User::where('role', 'employee')->orderBy('name')->get();
+        // ▼▼▼ SEDERHANAKAN BLOK LOGIKA INI ▼▼▼
+        // Logika untuk dropdown filter statistik
+        $query = User::query();
+
+        // Jika pengguna yang login memiliki hak akses admin (baik admin maupun semi_admin)
+        if ($loggedInUser->hasAdminPrivileges()) {
+            // Tampilkan semua employee DAN semi_admin di dalam filter
+            $query->whereIn('role', ['employee', 'semi_admin']);
         }
+        
+        $users = $query->orderBy('name')->get();
+    }
+
 
         return UserResource::collection($users);
     }

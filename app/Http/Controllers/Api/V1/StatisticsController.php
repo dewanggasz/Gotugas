@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Api\V1;
 use App\Http\Controllers\Controller;
 use App\Models\Task;
 use App\Models\User;
+use App\Models\Journal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use Carbon\CarbonPeriod;
 
 class StatisticsController extends Controller
 {
@@ -30,6 +32,8 @@ class StatisticsController extends Controller
             $startDate = $endDate->copy()->startOfYear();
         } elseif ($period === '90d') {
             $startDate = $endDate->copy()->subDays(89);
+        } elseif ($period === '7d') {
+        $startDate = $endDate->copy()->subDays(6);
         } else { // default to 30d
             $startDate = $endDate->copy()->subDays(29);
         }
@@ -38,27 +42,26 @@ class StatisticsController extends Controller
         $selectedUserId = $request->input('user_id');
 
         if ($user->hasAdminPrivileges() && $selectedUserId) {
-            // KASUS 1: Admin atau Semi Admin memilih pengguna spesifik.
             $baseQuery->where(function ($q) use ($selectedUserId) {
                 $q->where('user_id', $selectedUserId)
-                  ->orWhereHas('collaborators', fn($subQ) => $subQ->where('users.id', $selectedUserId));
+                ->orWhereHas('collaborators', fn($subQ) => $subQ->where('users.id', $selectedUserId));
             });
         } elseif ($user->hasAdminPrivileges() && !$selectedUserId) {
-            // --- PERUBAHAN DI SINI ---
-            // KASUS 2: Admin atau Semi Admin TIDAK memilih pengguna.
-            // Ambil tugas dari semua pengguna yang BUKAN 'admin'.
-            // Ini akan secara otomatis menyertakan 'semi_admin' dan 'employee'.
             $baseQuery->whereHas('user', function ($query) {
                 $query->where('role', '!=', 'admin');
             });
         } elseif (!$user->hasAdminPrivileges()) {
-            // KASUS 3: Pengguna adalah employee biasa.
             $baseQuery->where(function ($q) use ($user) {
                 $q->where('user_id', $user->id)
-                  ->orWhereHas('collaborators', fn($subQ) => $subQ->where('users.id', $user->id));
+                ->orWhereHas('collaborators', fn($subQ) => $subQ->where('users.id', $user->id));
             });
         }
 
+        $individualMoodData = null;
+        if ($selectedUserId && $period !== 'custom') {
+            $individualMoodData = $this->getIndividualMoodSummary($selectedUserId, $startDate, $endDate);
+        }
+        
         $performanceData = [];
         if ($user->hasAdminPrivileges()) {
             $performanceData = $this->getPerformanceData($startDate, $endDate, $selectedUserId);
@@ -69,6 +72,9 @@ class StatisticsController extends Controller
             'trend' => $this->getTrendData(clone $baseQuery, $startDate, $endDate, $period),
             'status_composition' => $this->getStatusCompositionData(clone $baseQuery, $startDate, $endDate),
             'performance' => $performanceData,
+            'mood_trend' => $this->getMoodTrendData($user, $startDate, $endDate),
+            'individual_mood' => $individualMoodData,
+            'overall_mood' => $this->getOverallMoodSummary($user, $startDate, $endDate),
         ]);
     }
 
@@ -135,6 +141,60 @@ class StatisticsController extends Controller
         })->values();
     }
 
+    private function getOverallMoodSummary($user, Carbon $startDate, Carbon $endDate): ?array
+    {
+        $moodScoreCase = "CASE mood WHEN 'joyful' THEN 5 WHEN 'excited' THEN 4 WHEN 'happy' THEN 3 WHEN 'neutral' THEN 2 WHEN 'sad' THEN 1 ELSE 0 END";
+
+        $query = Journal::query()
+            ->whereBetween('entry_date', [$startDate, $endDate])
+            ->whereNotNull('mood');
+
+        if ($user->hasAdminPrivileges()) {
+            $query->join('users', 'journals.user_id', '=', 'users.id')
+                ->whereIn('users.role', ['employee', 'semi_admin']);
+        } else {
+            $query->where('user_id', $user->id);
+        }
+        
+        $averageScore = $query->select(DB::raw("AVG($moodScoreCase) as avg_score"))
+                            ->value('avg_score');
+
+        if ($averageScore === null) {
+            return null;
+        }
+
+        return [
+            'average_score' => (float) $averageScore,
+        ];
+    }
+
+    private function getIndividualMoodSummary($userId, Carbon $startDate, Carbon $endDate): ?array
+    {
+        $moodScoreCase = "CASE mood 
+            WHEN 'joyful' THEN 5 
+            WHEN 'excited' THEN 4 
+            WHEN 'happy' THEN 3 
+            WHEN 'neutral' THEN 2 
+            WHEN 'sad' THEN 1 
+            ELSE 0 END";
+
+        $averageScore = Journal::query()
+            ->where('user_id', $userId)
+            ->whereBetween('entry_date', [$startDate, $endDate])
+            ->whereNotNull('mood') // Hanya hitung entri yang memiliki mood
+            ->select(DB::raw("AVG($moodScoreCase) as avg_score"))
+            ->value('avg_score');
+
+        if ($averageScore === null) {
+            return null;
+        }
+
+        return [
+            'user_id' => $userId,
+            'average_score' => (float) $averageScore,
+        ];
+    }
+
     // --- Ubah signature method ini untuk menerima $selectedUserId ---
     private function getPerformanceData(Carbon $startDate, Carbon $endDate, ?string $selectedUserId): Collection
     {
@@ -167,5 +227,47 @@ class StatisticsController extends Controller
                 'Dibatalkan' => $cancelled,
             ];
         });
+    }
+    private function getMoodTrendData($user, Carbon $startDate, Carbon $endDate): Collection
+    {
+        $moodScoreCase = "CASE journals.mood 
+            WHEN 'joyful' THEN 5 
+            WHEN 'excited' THEN 4 
+            WHEN 'happy' THEN 3 
+            WHEN 'neutral' THEN 2 
+            WHEN 'sad' THEN 1 
+            ELSE 0 END";
+
+        $query = Journal::query()
+            ->whereBetween('entry_date', [$startDate, $endDate])
+            ->join('users', 'journals.user_id', '=', 'users.id')
+            ->select(
+                'entry_date',
+                DB::raw("AVG($moodScoreCase) as avg_score")
+            );
+
+        if ($user->hasAdminPrivileges()) {
+            $query->whereIn('users.role', ['employee', 'semi_admin']);
+        } else {
+            $query->where('journals.user_id', $user->id);
+        }
+        
+        $actualData = $query->groupBy('entry_date')
+                            ->orderBy('entry_date')
+                            ->get()
+                            ->keyBy(fn($item) => Carbon::parse($item->entry_date)->format('Y-m-d'));
+
+        $period = CarbonPeriod::create($startDate, $endDate);
+        $trendData = new Collection();
+
+        foreach ($period as $date) {
+            $dateString = $date->format('Y-m-d');
+            $trendData->push([
+                'name' => $date->format('d M'),
+                'score' => $actualData->has($dateString) ? (float) $actualData->get($dateString)->avg_score : null,
+            ]);
+        }
+
+        return $trendData;
     }
 }
