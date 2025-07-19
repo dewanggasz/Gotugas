@@ -10,7 +10,7 @@ class JournalNote extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['journal_id', 'title', 'content'];
+    protected $fillable = ['journal_id', 'title', 'color', 'content'];
 
     public function journal(): BelongsTo
     {

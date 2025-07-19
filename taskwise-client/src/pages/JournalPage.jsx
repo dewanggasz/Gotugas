@@ -25,22 +25,50 @@ import {
   Loader2,
 } from "lucide-react"
 
-// Menggunakan React.lazy untuk memuat form secara dinamis
+// Lazy load komponen form
 const JournalNoteForm = lazy(() => import('../components/JournalNoteForm'))
 
+// Helper function untuk gaya kartu
+const getCardStyles = (color) => {
+  switch (color) {
+    case 'red':
+      return 'bg-red-50 border-red-200 hover:shadow-red-100/50';
+    case 'blue':
+      return 'bg-blue-50 border-blue-200 hover:shadow-blue-100/50';
+    case 'green':
+      return 'bg-green-50 border-green-200 hover:shadow-green-100/50';
+    case 'yellow':
+      return 'bg-yellow-50 border-yellow-200 hover:shadow-yellow-100/50';
+    case 'purple':
+      return 'bg-purple-50 border-purple-200 hover:shadow-purple-100/50';
+    default:
+      return 'bg-white border-gray-200 hover:shadow-lg';
+  }
+};
+
+// Helper function untuk gaya judul
+const getTitleStyles = (color) => {
+    switch (color) {
+      case 'red': return 'text-red-800';
+      case 'blue': return 'text-blue-800';
+      case 'green': return 'text-green-800';
+      case 'yellow': return 'text-yellow-800';
+      case 'purple': return 'text-purple-800';
+      default: return 'text-gray-800';
+    }
+}
+
+
 export default function JournalPage() {
-  // State untuk tanggal dan data
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
   const [monthData, setMonthData] = useState([])
   const [dayDetails, setDayDetails] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  // State untuk modal catatan
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false)
   const [editingNote, setEditingNote] = useState(null)
 
-  // Fungsi untuk mengambil semua data
   const fetchAllData = useCallback(async (dateToFetch, dayToSelect) => {
     setIsLoading(true)
     try {
@@ -58,17 +86,14 @@ export default function JournalPage() {
     }
   }, [])
 
-  // useEffect untuk memuat data saat tanggal berubah
   useEffect(() => {
     fetchAllData(currentDate, selectedDate)
   }, [currentDate, selectedDate, fetchAllData])
 
-  // Fungsi navigasi bulan
   const changeMonth = (amount) => {
     setCurrentDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + amount, 1))
   }
 
-  // Fungsi membuat grid kalender
   const generateCalendarGrid = () => {
     const year = currentDate.getFullYear()
     const month = currentDate.getMonth()
@@ -88,7 +113,6 @@ export default function JournalPage() {
   }
   const calendarGrid = generateCalendarGrid()
 
-  // Fungsi untuk memperbarui mood
   const handleMoodUpdate = async (mood) => {
     const newMood = dayDetails.mood === mood ? null : mood
     try {
@@ -101,14 +125,11 @@ export default function JournalPage() {
     }
   }
 
-  // Fungsi untuk mengirim/memperbarui catatan
   const handleNoteSubmit = async (noteData) => {
     try {
       if (editingNote) {
-        // Mengirim data { title, content } untuk update
         await updateJournalNote(editingNote.id, noteData)
       } else {
-        // Mengirim data { entry_date, title, content } untuk penambahan baru
         await addJournalNote({ entry_date: selectedDate, ...noteData })
       }
       fetchAllData(currentDate, selectedDate)
@@ -118,7 +139,6 @@ export default function JournalPage() {
     }
   }
 
-  // Fungsi untuk menghapus catatan
   const handleNoteDelete = async (noteId) => {
     if (window.confirm("Apakah Anda yakin ingin menghapus catatan ini?")) {
       try {
@@ -161,11 +181,12 @@ export default function JournalPage() {
                   <div className="h-full xl:overflow-y-auto space-y-3 pr-2">
                     {dayDetails?.notes?.length > 0 ? (
                       dayDetails.notes.map((note) => (
-                        <div key={note.id} className="group bg-white border border-gray-200 p-4 rounded-xl hover:shadow-md transition-all duration-200">
+                        <div 
+                          key={note.id} 
+                          className={`group p-4 rounded-xl transition-all duration-200 border ${getCardStyles(note.color)}`}
+                        >
                           <div className="flex justify-between items-start gap-3">
-                            
-                            {/* Menampilkan judul catatan, bukan lagi konten */}
-                            <div className="text-gray-800 font-semibold flex-1 truncate">
+                            <div className={`font-semibold flex-1 truncate ${getTitleStyles(note.color)}`}>
                               {note.title}
                             </div>
                             
@@ -215,7 +236,6 @@ export default function JournalPage() {
         </div>
       </div>
 
-      {/* Suspense untuk menangani lazy loading komponen form */}
       <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-white" /></div>}>
         {isNoteModalOpen && <JournalNoteForm isOpen={isNoteModalOpen} onClose={() => setIsNoteModalOpen(false)} onSubmit={handleNoteSubmit} initialNote={editingNote} />}
       </Suspense>

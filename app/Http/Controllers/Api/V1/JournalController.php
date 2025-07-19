@@ -75,24 +75,33 @@ class JournalController extends Controller
     /**
      * Menambahkan catatan baru ke tanggal tertentu.
      */
-    public function addNote(Request $request)
+     public function addNote(Request $request)
     {
         /** @var \App\Models\User $user */
         $user = Auth::user();
+
+        // ▼▼▼ PERBARUI BAGIAN VALIDASI DI SINI ▼▼▼
         $validated = $request->validate([
             'entry_date' => 'required|date_format:Y-m-d',
-            'title'      => 'required|string|max:255', // <-- TAMBAHKAN VALIDASI
+            'title'      => 'required|string|max:255',
+            'color'      => 'required|string|in:default,red,blue,green,yellow,purple', // <-- Tambahkan ini
             'content'    => 'required|string',
         ]);
+        // ▲▲▲ AKHIR DARI PERUBAHAN VALIDASI ▲▲▲
 
+        // Pastikan entri jurnal harian ada
         $journal = $user->journals()->firstOrCreate(
             ['entry_date' => $validated['entry_date']]
         );
 
+        // ▼▼▼ PERBARUI BAGIAN PEMBUATAN CATATAN DI SINI ▼▼▼
+        // Buat catatan baru yang terhubung ke entri harian tersebut
         $note = $journal->notes()->create([
-            'title'   => $validated['title'], // <-- SIMPAN JUDUL
+            'title'   => $validated['title'],
+            'color'   => $validated['color'], // <-- Tambahkan ini
             'content' => $validated['content'],
         ]);
+        // ▲▲▲ AKHIR DARI PERUBAHAN PEMBUATAN CATATAN ▲▲▲
 
         return response()->json($note, 201);
     }
@@ -105,7 +114,8 @@ class JournalController extends Controller
         $this->authorize('update', $note);
 
         $validated = $request->validate([
-            'title'   => 'required|string|max:255', // <-- TAMBAHKAN VALIDASI
+            'title'   => 'required|string|max:255',
+            'color'   => 'required|string|in:default,red,blue,green,yellow,purple',
             'content' => 'required|string'
         ]);
         
