@@ -16,8 +16,15 @@ Taskwise adalah aplikasi full-stack yang dirancang untuk membantu tim mengelola 
     - Kartu ringkasan (KPI) dan berbagai grafik (tren, komposisi status, performa tim).
     - Filter dinamis berdasarkan periode (30 hari, 90 hari, tahun ini, dan rentang kustom).
     - Kemampuan pengguna dengan role admin untuk melihat statistik per pengguna.
-- **Panel Admin Kuat (Filament):**
-    - Antarmuka terpisah untuk admin mengelola semua pengguna dan tugas di seluruh sistem.
+- **Jurnal & Mood Tracker Harian:**
+    - Kalender interaktif untuk navigasi harian dan bulanan.
+    - Pengguna dapat mencatat mood harian mereka (senang, sedih, netral, dll.).
+    - Membuat banyak catatan per hari dengan judul dan editor teks kaya (rich text editor).
+    - Kartu catatan dengan kode warna untuk identifikasi visual yang cepat.
+- **Sistem Peran & Izin (Roles & Permissions):**
+    - Admin: Memiliki akses penuh ke semua fitur dan dapat mengelola semua pengguna (termasuk Admin lain).
+    - Semi-Admin: Dapat mengelola pengguna dengan peran di bawahnya (Karyawan) dan melihat semua tugas.
+    - Karyawan (Employee): Hanya dapat mengelola dan melihat tugas yang ditugaskan kepadanya.
 - **Personalisasi Pengguna:**
     - Pengguna dapat memperbarui nama, mengubah password, dan mengunggah foto profil mereka sendiri.
 - **Notifikasi Email:** Dapatkan notifikasi otomatis untuk penugasan baru dan komentar baru.
@@ -93,10 +100,3 @@ Langkah-langkah ini hanya perlu dilakukan sekali saat pertama kali menyiapkan pr
     cd ..
     # Kembali ke direktori utama
 ```
-
-### 2. Akses Panel Admin
-Untuk mengakses panel admin yang dibuat dengan Filament:
-- URL: ```http://localhost:8000/admin``` (atau ```http://taskwise-api.test/admin```)
-- Email: ```admin@example.com```
-- Password: ```password```
-(Kredensial ini dibuat oleh seeder RealisticUserTaskSeeder.php).

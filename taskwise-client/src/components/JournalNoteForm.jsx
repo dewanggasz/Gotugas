@@ -159,7 +159,7 @@ const ColorPicker = ({ selectedColor, onSelectColor }) => {
 
   return (
     <div>
-      <label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-2">
+      <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
         <Sparkles className="w-4 h-4 text-blue-500" />
         Warna Catatan
       </label>
@@ -310,7 +310,7 @@ export default function JournalNoteForm({ isOpen, onClose, onSubmit, initialNote
             <div>
               <label
                 htmlFor="note-title"
-                className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-2"
+                className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2"
               >
                 <Heart className="w-4 h-4 text-blue-500" />
                 Judul Catatan
@@ -334,7 +334,7 @@ export default function JournalNoteForm({ isOpen, onClose, onSubmit, initialNote
 
             {/* Editor */}
             <div className="flex-1 min-h-0">
-              <label className="text-sm font-medium text-gray-700 mb-2 block flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                 <Feather className="w-4 h-4 text-blue-500" />
                 Isi Catatan
               </label>
