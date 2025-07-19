@@ -65,9 +65,14 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
     Route::get('statistics', [StatisticsController::class, 'index']);
 
     // --- RUTE UNTUK JURNAL PRIBADI ---
-    Route::get('journals', [JournalController::class, 'index']);
-    Route::get('journals/{date}', [JournalController::class, 'showByDate']);
-    Route::post('journals', [JournalController::class, 'storeOrUpdate']);
+    Route::prefix('journals')->group(function () {
+        Route::get('/month/{year}/{month}', [JournalController::class, 'getMonthData']);
+        Route::get('/day/{date}', [JournalController::class, 'getDayDetails']);
+        Route::post('/mood', [JournalController::class, 'updateMood']);
+        Route::post('/notes', [JournalController::class, 'addNote']);
+        Route::put('/notes/{note}', [JournalController::class, 'updateNote']);
+        Route::delete('/notes/{note}', [JournalController::class, 'deleteNote']);
+    });
 
     // Rute Tugas & Aktivitas
     Route::get('tasks/summary', [TaskController::class, 'summary']);
