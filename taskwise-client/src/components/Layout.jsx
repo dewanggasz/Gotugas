@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Menu, LogOut, User, X, BarChart3, CheckSquare, ChevronDown, ShieldCheck } from "lucide-react"
+import { Menu, LogOut, User, X, BarChart3, CheckSquare, ChevronDown, ShieldCheck, Book } from "lucide-react"
 
 export default function ClientLayout({ activePage, setActivePage, onLogout, currentUser, children }) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -36,6 +36,7 @@ export default function ClientLayout({ activePage, setActivePage, onLogout, curr
   const navigationItems = [
     { id: "statistics", label: "Statistik", icon: BarChart3 },
     { id: "tasks", label: "Tugas", icon: CheckSquare },
+    { id: "journal", label: "Jurnal", icon: Book },
   ];
   
   const adminNavigationItem = {

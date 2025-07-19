@@ -91,6 +91,23 @@ export const postTaskComment = (taskId, commentData) => {
     return apiClient.post(`/v1/tasks/${taskId}/comments`, commentData);
 };
 
+/**
+ * Mengambil daftar semua entri jurnal (hanya tanggal dan id) untuk navigasi.
+ */
+export const getJournalEntries = () => apiClient.get('/v1/journals');
+
+/**
+ * Mengambil atau membuat entri jurnal untuk tanggal spesifik.
+ * @param {string} date - Tanggal dalam format YYYY-MM-DD.
+ */
+export const getJournalEntryByDate = (date) => apiClient.get(`/v1/journals/${date}`);
+
+/**
+ * Menyimpan atau memperbarui konten dan mood entri jurnal.
+ * @param {object} journalData - Data berisi entry_date, content, dan mood.
+ */
+export const saveJournalEntry = (journalData) => apiClient.post('/v1/journals', journalData);
+
 
 // --- FUNGSI LAINNYA ---
 export const getStatistics = (params) => apiClient.get('/v1/statistics', { params });

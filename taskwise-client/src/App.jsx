@@ -4,7 +4,8 @@ import Layout from './components/Layout';
 import StatisticsPage from './pages/StatisticsPage';
 import TasksPage from './pages/TasksPage';
 import ProfilePage from './pages/ProfilePage';
-import UserManagementPage from './pages/UserManagementPage'; // <-- PERUBAHAN: Impor halaman baru
+import UserManagementPage from './pages/UserManagementPage'; 
+import JournalPage from './pages/JournalPage';
 import { getUser } from './services/api';
 
 const getInitialPage = () => {
@@ -93,7 +94,7 @@ function App() {
       {activePage === 'statistics' && <StatisticsPage currentUser={currentUser} />}
       {activePage === 'tasks' && <TasksPage currentUser={currentUser} />}
       {activePage === 'profile' && <ProfilePage currentUser={currentUser} onUpdateSuccess={handleProfileUpdate} />}
-      {/* <-- PERUBAHAN: Render halaman manajemen pengguna secara kondisional --> */}
+      {activePage === 'journal' && <JournalPage currentUser={currentUser} />}
       {activePage === 'userManagement' && <UserManagementPage />}
     </Layout>
   );
