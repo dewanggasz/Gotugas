@@ -61,7 +61,7 @@ class JournalController extends Controller
         $user = Auth::user();
         $validated = $request->validate([
             'entry_date' => 'required|date_format:Y-m-d',
-            'mood' => 'nullable|string|in:sad,neutral,happy,excited,joyful',
+            'mood' => 'nullable|string|in:sad,neutral,happy,excited,joyful,angry',
         ]);
 
         $journal = $user->journals()->updateOrCreate(

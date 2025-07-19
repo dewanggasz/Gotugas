@@ -91,23 +91,45 @@ export const postTaskComment = (taskId, commentData) => {
     return apiClient.post(`/v1/tasks/${taskId}/comments`, commentData);
 };
 
+// --- FUNGSI BARU UNTUK JURNAL KALENDER ---
 /**
- * Mengambil daftar semua entri jurnal (hanya tanggal dan id) untuk navigasi.
+ * Mengambil data ringkasan (mood & jumlah catatan) untuk satu bulan penuh.
+ * @param {number} year - Tahun, misal: 2025
+ * @param {number} month - Bulan, misal: 7 untuk Juli (1-12)
  */
-export const getJournalEntries = () => apiClient.get('/v1/journals');
+export const getJournalMonthData = (year, month) => apiClient.get(`/v1/journals/month/${year}/${month}`);
 
 /**
- * Mengambil atau membuat entri jurnal untuk tanggal spesifik.
+ * Mengambil detail lengkap (mood & daftar catatan) untuk satu tanggal.
  * @param {string} date - Tanggal dalam format YYYY-MM-DD.
  */
-export const getJournalEntryByDate = (date) => apiClient.get(`/v1/journals/${date}`);
+export const getJournalDayDetails = (date) => apiClient.get(`/v1/journals/day/${date}`);
 
 /**
- * Menyimpan atau memperbarui konten dan mood entri jurnal.
- * @param {object} journalData - Data berisi entry_date, content, dan mood.
+ * Memperbarui mood untuk tanggal tertentu.
+ * @param {object} data - Data berisi { entry_date, mood }
  */
-export const saveJournalEntry = (journalData) => apiClient.post('/v1/journals', journalData);
+export const updateJournalMood = (data) => apiClient.post('/v1/journals/mood', data);
+
+/**
+ * Menambahkan catatan baru ke tanggal tertentu.
+ * @param {object} data - Data berisi { entry_date, content }
+ */
+export const addJournalNote = (data) => apiClient.post('/v1/journals/notes', data);
+
+/**
+ * Memperbarui konten catatan yang sudah ada.
+ * @param {number} noteId - ID dari catatan yang akan diubah.
+ * @param {object} data - Data berisi { content }
+ */
+export const updateJournalNote = (noteId, data) => apiClient.put(`/v1/journals/notes/${noteId}`, data);
+
+/**
+ * Menghapus catatan.
+ * @param {number} noteId - ID dari catatan yang akan dihapus.
+ */
+export const deleteJournalNote = (noteId) => apiClient.delete(`/v1/journals/notes/${noteId}`);
 
 
-// --- FUNGSI LAINNYA ---
+//statistic 
 export const getStatistics = (params) => apiClient.get('/v1/statistics', { params });
