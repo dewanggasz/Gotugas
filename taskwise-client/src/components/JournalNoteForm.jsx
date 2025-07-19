@@ -1,7 +1,6 @@
 "use client"
 
-// 1. Impor 'useRef' dari React
-import { useEffect, useReducer, useRef } from "react"
+import { useState, useEffect, useReducer, useRef } from "react"
 import { useEditor, EditorContent } from "@tiptap/react"
 import StarterKit from "@tiptap/starter-kit"
 import {
@@ -9,7 +8,7 @@ import {
   Strikethrough, Indent, Outdent, Undo, Redo
 } from "lucide-react"
 
-// Komponen MenuBar tidak perlu diubah
+// Komponen Toolbar (tidak berubah)
 const MenuBar = ({ editor }) => {
   if (!editor) return null
   const menuItems = [
@@ -41,53 +40,63 @@ const MenuBar = ({ editor }) => {
 
 export default function JournalNoteForm({ isOpen, onClose, onSubmit, initialNote }) {
   const [_, forceUpdate] = useReducer((x) => x + 1, 0)
-  // 2. Buat sebuah ref untuk melacak status 'mounted'
   const isMounted = useRef(false)
+  
+  // State baru untuk judul
+  const [title, setTitle] = useState("")
 
   const editor = useEditor({
     extensions: [StarterKit],
     content: "",
-    editorProps: { attributes: { class: 'prose prose-sm sm:prose-base max-w-none p-4 focus:outline-none' } },
+    editorProps: { attributes: { class: 'prose prose-sm sm:prose-base max-w-none p-4' } },
     onTransaction: () => {
-      // 4. Tambahkan pengecekan 'isMounted.current'
       if (editor && isMounted.current) {
         forceUpdate()
       }
     },
     onSelectionUpdate: () => {
-      // 4. Tambahkan pengecekan 'isMounted.current' juga di sini
       if (editor && isMounted.current) {
         forceUpdate()
       }
     },
   })
 
-  // 3. Gunakan useEffect untuk mengubah nilai ref saat komponen mount dan unmount
+  // Efek untuk melacak status mounted
   useEffect(() => {
     isMounted.current = true;
     return () => {
       isMounted.current = false;
     };
-  }, []); // <-- Array dependensi kosong agar hanya berjalan sekali saat mount dan cleanup saat unmount
+  }, []);
 
+  // Efek untuk mengisi form saat dibuka
   useEffect(() => {
     if (!editor || !isOpen) return
+    setTitle(initialNote?.title || "")
     const newContent = initialNote?.content || ""
     if (editor.getHTML() !== newContent) {
       editor.commands.setContent(newContent, false)
     }
   }, [isOpen, initialNote, editor])
 
+  // Fungsi untuk handle submit form
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!editor) return
-    await onSubmit({ content: editor.getHTML() })
+
+    if (!title.trim()) {
+        alert("Judul tidak boleh kosong.");
+        return;
+    }
+
+    await onSubmit({ title: title, content: editor.getHTML() })
     onClose()
   }
 
   if (!isOpen) return null
 
   return (
+    // Div overlay dengan gaya latar belakang transparan dan blur
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl">
         <form onSubmit={handleSubmit}>
@@ -95,6 +104,22 @@ export default function JournalNoteForm({ isOpen, onClose, onSubmit, initialNote
             <h3 className="text-xl font-bold text-gray-800">
               {initialNote ? "Edit Catatan" : "Catatan Baru"}
             </h3>
+            
+            {/* Input field untuk judul */}
+            <div>
+              <label htmlFor="note-title" className="text-sm font-medium text-gray-700 mb-1 block">Judul</label>
+              <input
+                id="note-title"
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Tulis judul catatan di sini..."
+                className="w-full border-gray-300 rounded-lg shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
+              />
+            </div>
+
+            {/* Editor Tiptap untuk konten */}
             <div className="border border-gray-300 rounded-lg">
               <MenuBar editor={editor} />
               <EditorContent editor={editor} className="min-h-[250px] max-h-[50vh] overflow-y-auto" />
@@ -106,16 +131,15 @@ export default function JournalNoteForm({ isOpen, onClose, onSubmit, initialNote
           </div>
         </form>
       </div>
+      
+      {/* Perbaikan CSS untuk ProseMirror dan list */}
       <style>{`
-
         .ProseMirror {
-            white-space: pre-wrap;
-          }
-
+          white-space: pre-wrap;
+        }
         .ProseMirror:focus {
           outline: none;
         }
-
         .prose li {
           margin-top: 0.25em;
           margin-bottom: 0.25em;

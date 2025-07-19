@@ -81,16 +81,16 @@ class JournalController extends Controller
         $user = Auth::user();
         $validated = $request->validate([
             'entry_date' => 'required|date_format:Y-m-d',
-            'content' => 'required|string',
+            'title'      => 'required|string|max:255', // <-- TAMBAHKAN VALIDASI
+            'content'    => 'required|string',
         ]);
 
-        // Pastikan entri jurnal harian ada
         $journal = $user->journals()->firstOrCreate(
             ['entry_date' => $validated['entry_date']]
         );
 
-        // Buat catatan baru yang terhubung ke entri harian tersebut
         $note = $journal->notes()->create([
+            'title'   => $validated['title'], // <-- SIMPAN JUDUL
             'content' => $validated['content'],
         ]);
 
@@ -102,10 +102,13 @@ class JournalController extends Controller
      */
     public function updateNote(Request $request, JournalNote $note)
     {
-        // Otorisasi: Pastikan catatan ini milik pengguna yang sedang login
         $this->authorize('update', $note);
 
-        $validated = $request->validate(['content' => 'required|string']);
+        $validated = $request->validate([
+            'title'   => 'required|string|max:255', // <-- TAMBAHKAN VALIDASI
+            'content' => 'required|string'
+        ]);
+        
         $note->update($validated);
         return response()->json($note);
     }

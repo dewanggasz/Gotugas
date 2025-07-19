@@ -1,6 +1,5 @@
 "use client"
 
-// 1. Impor 'lazy' dan 'Suspense' dari React
 import { useState, useEffect, useCallback, lazy, Suspense } from "react"
 
 // API services
@@ -26,8 +25,7 @@ import {
   Loader2,
 } from "lucide-react"
 
-// 2. Gunakan React.lazy untuk memuat komponen secara dinamis
-// Ini adalah cara standar React untuk code-splitting
+// Menggunakan React.lazy untuk memuat form secara dinamis
 const JournalNoteForm = lazy(() => import('../components/JournalNoteForm'))
 
 export default function JournalPage() {
@@ -100,9 +98,6 @@ export default function JournalPage() {
       fetchAllData(currentDate, selectedDate)
     } catch (error) {
       console.error("Gagal memperbarui mood:", error)
-      if (error.response?.status === 422) {
-        alert(`Gagal menyimpan mood: ${error.response.data.message || "Data tidak valid"}`)
-      }
     }
   }
 
@@ -110,9 +105,11 @@ export default function JournalPage() {
   const handleNoteSubmit = async (noteData) => {
     try {
       if (editingNote) {
+        // Mengirim data { title, content } untuk update
         await updateJournalNote(editingNote.id, noteData)
       } else {
-        await addJournalNote({ entry_date: selectedDate, content: noteData.content })
+        // Mengirim data { entry_date, title, content } untuk penambahan baru
+        await addJournalNote({ entry_date: selectedDate, ...noteData })
       }
       fetchAllData(currentDate, selectedDate)
     } catch (error) {
@@ -139,7 +136,6 @@ export default function JournalPage() {
         <div className="flex flex-col xl:flex-row gap-6 h-auto xl:h-full">
           {/* Kolom Kiri: Detail Harian */}
           <div className="xl:w-2/5 bg-white rounded-2xl shadow-lg border border-gray-100 flex flex-col order-2 xl:order-1 xl:h-full">
-            {/* ... Konten kolom kiri tidak berubah ... */}
              <div className="p-6 border-b border-gray-100">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-blue-100 rounded-lg"><Book className="w-5 h-5 text-blue-600" /></div>
@@ -167,10 +163,12 @@ export default function JournalPage() {
                       dayDetails.notes.map((note) => (
                         <div key={note.id} className="group bg-white border border-gray-200 p-4 rounded-xl hover:shadow-md transition-all duration-200">
                           <div className="flex justify-between items-start gap-3">
-                            <div
-                              className="text-gray-700 text-sm leading-relaxed whitespace-pre-wrap flex-1 prose prose-sm max-w-none"
-                              dangerouslySetInnerHTML={{ __html: note.content }}
-                            />
+                            
+                            {/* Menampilkan judul catatan, bukan lagi konten */}
+                            <div className="text-gray-800 font-semibold flex-1 truncate">
+                              {note.title}
+                            </div>
+                            
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                               <button onClick={() => { setEditingNote(note); setIsNoteModalOpen(true); }} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit className="w-4 h-4" /></button>
                               <button onClick={() => handleNoteDelete(note.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
@@ -189,7 +187,6 @@ export default function JournalPage() {
 
           {/* Kolom Kanan: Kalender */}
           <div className="xl:w-3/5 bg-white rounded-2xl shadow-lg border border-gray-100 flex flex-col order-1 xl:order-2 xl:h-full">
-            {/* ... Konten kolom kanan tidak berubah ... */}
              <div className="p-6 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <button onClick={() => changeMonth(-1)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"><ChevronLeft className="w-5 h-5 text-gray-600" /></button>
@@ -218,7 +215,7 @@ export default function JournalPage() {
         </div>
       </div>
 
-      {/* 3. Bungkus komponen dengan Suspense */}
+      {/* Suspense untuk menangani lazy loading komponen form */}
       <Suspense fallback={<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin text-white" /></div>}>
         {isNoteModalOpen && <JournalNoteForm isOpen={isNoteModalOpen} onClose={() => setIsNoteModalOpen(false)} onSubmit={handleNoteSubmit} initialNote={editingNote} />}
       </Suspense>
