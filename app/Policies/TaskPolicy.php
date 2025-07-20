@@ -13,7 +13,7 @@ class TaskPolicy
      */
     public function before(User $user, string $ability): bool|null
     {
-        if ($user->isAdmin()) {
+        if ($user->hasAdminPrivileges()) {
             return true;
         }
 

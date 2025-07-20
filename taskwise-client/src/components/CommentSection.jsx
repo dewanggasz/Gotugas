@@ -159,6 +159,7 @@ export default function CommentSection({ taskId, currentUser, task }) {
   // Check if current user is allowed to comment
   const canComment =
     currentUser?.role === "admin" ||
+    currentUser?.role === "semi_admin" ||
     task.collaborators.some((c) => c.id === currentUser?.id && (c.permission === "edit" || c.permission === "comment"))
 
   return (

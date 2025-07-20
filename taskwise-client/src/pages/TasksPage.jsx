@@ -266,27 +266,27 @@ const Avatar = ({ user, size = "sm" }) => {
   )
 }
 
-const CollaboratorAvatars = ({ collaborators, creator }) => {
-  if (!creator) return null
+const CollaboratorAvatars = ({ collaborators }) => {
+  // Langsung gunakan daftar 'collaborators' karena sudah termasuk pembuat tugas
+  const team = collaborators || []
 
-  const otherCollaborators = collaborators.filter((c) => c.id !== creator.id)
-
-  if (otherCollaborators.length === 0) {
-    return (
-      <div className="flex items-center">
-        <Avatar user={creator} />
-      </div>
-    )
+  if (team.length === 0) {
+    return <span className="text-xs text-slate-500">-</span>
   }
 
+  // Tampilkan hingga 3 avatar, sisanya akan dihitung
+  const displayLimit = 3
+  const displayedTeam = team.slice(0, displayLimit)
+  const hiddenCount = team.length - displayedTeam.length
+
   return (
-    <div className="flex items-center -space-x-1">
-      {otherCollaborators.slice(0, 2).map((user) => (
+    <div className="flex items-center -space-x-2">
+      {displayedTeam.map((user) => (
         <Avatar key={user.id} user={user} />
       ))}
-      {otherCollaborators.length > 2 && (
-        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center text-xs font-bold text-white border border-slate-400">
-          +{otherCollaborators.length - 2}
+      {hiddenCount > 0 && (
+        <div className="h-7 w-7 rounded-full bg-slate-600 flex items-center justify-center text-xs font-bold text-white border-2 border-white z-10 ring-1 ring-slate-700">
+          +{hiddenCount}
         </div>
       )}
     </div>
@@ -566,8 +566,8 @@ export default function TasksPage({ currentUser }) {
         console.error("Gagal memuat daftar pengguna", err)
       }
     }
-    if (currentUser?.role === 'admin' || currentUser?.role === 'semi_admin') {
-      fetchAllUsers()
+    if (currentUser) {
+      fetchAllUsers();
     }
   }, [currentUser])
 
