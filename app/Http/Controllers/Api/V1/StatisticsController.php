@@ -75,6 +75,7 @@ class StatisticsController extends Controller
             'mood_trend' => $this->getMoodTrendData($user, $startDate, $endDate),
             'individual_mood' => $individualMoodData,
             'overall_mood' => $this->getOverallMoodSummary($user, $startDate, $endDate),
+            'kpi_data' => $this->getKpiData($user, $startDate, $endDate, $selectedUserId),
         ]);
     }
 
@@ -269,5 +270,70 @@ class StatisticsController extends Controller
         }
 
         return $trendData;
+    }
+    private function getKpiData($loggedInUser, Carbon $startDate, Carbon $endDate, ?string $selectedUserId): Collection
+    {
+        // Tentukan pengguna mana yang akan di-query berdasarkan hak akses
+        $query = User::query();
+
+        if ($loggedInUser->isAdmin()) {
+            // Admin bisa melihat semua semi_admin dan employee
+            $query->whereIn('role', ['employee', 'semi_admin']);
+        } elseif ($loggedInUser->role === 'semi_admin') {
+            // Semi-admin bisa melihat sesama semi_admin dan employee
+            $query->whereIn('role', ['employee', 'semi_admin']);
+        } else {
+            // Employee hanya melihat diri sendiri
+            $query->where('id', $loggedInUser->id);
+        }
+
+        // Jika ada pengguna spesifik yang dipilih dari filter, fokus hanya pada pengguna itu
+        if ($selectedUserId) {
+            $query->where('id', $selectedUserId);
+        }
+        
+        // Ambil pengguna beserta tugas-tugas mereka dalam rentang periode yang dipilih
+        $users = $query->with(['createdTasks' => function ($query) use ($startDate, $endDate) {
+            $query->whereBetween('created_at', [$startDate, $endDate]);
+        }, 'tasks' => function ($query) use ($startDate, $endDate) {
+            $query->whereBetween('created_at', [$startDate, $endDate]);
+        }])->get();
+
+        // Hitung skor KPI untuk setiap pengguna
+        return $users->map(function ($user) {
+            // Gabungkan tugas yang dibuat dan tugas kolaborasi, lalu pastikan unik
+            $allTasks = $user->createdTasks->merge($user->tasks)->unique('id');
+
+            $completedOnTime = $allTasks->where('status', 'completed')
+                                        ->whereNotNull('due_date')
+                                        ->filter(fn($task) => $task->updated_at->lte($task->due_date))
+                                        ->count();
+
+            $completedLate = $allTasks->where('status', 'completed')
+                                    ->whereNotNull('due_date')
+                                    ->filter(fn($task) => $task->updated_at->gt($task->due_date))
+                                    ->count();
+
+            $stillOverdue = $allTasks->where('status', '!=', 'completed')
+                                    ->whereNotNull('due_date')
+                                    ->where('due_date', '<', now())
+                                    ->count();
+
+            // Terapkan formula KPI
+            $kpiScore = ($completedOnTime * 15) + ($completedLate * 5) - ($stillOverdue * 10);
+
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'profile_photo_url' => $user->profile_photo_url,
+                'jabatan' => $user->jabatan,
+                'kpi_score' => $kpiScore,
+                'stats' => [
+                    'completed_on_time' => $completedOnTime,
+                    'completed_late' => $completedLate,
+                    'still_overdue' => $stillOverdue,
+                ]
+            ];
+        })->sortByDesc('kpi_score')->values(); // Urutkan dari skor tertinggi
     }
 }

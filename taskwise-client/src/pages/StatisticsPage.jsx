@@ -19,6 +19,7 @@ import {
   Area,
 } from "recharts"
 import { BarChart3, Users, ChevronDown, User, TrendingUp, Activity, Sparkles } from "lucide-react"
+import KpiCard from '../components/KpiCard';
 
 // Enhanced SummaryCard with better mobile layout
 const SummaryCard = ({ title, value, icon }) => {
@@ -228,7 +229,7 @@ const ChartCard = ({ title, children, isLoading, className = "" }) => (
         </div>
       </div>
     ) : (
-      <div className="w-full overflow-hidden">
+      <div className="w-full overflow-auto">
         <ResponsiveContainer width="100%" height={280} className="md:!h-80">
           {children}
         </ResponsiveContainer>
@@ -349,6 +350,7 @@ export default function StatisticsPage({ currentUser }) {
   const statusData = dashboardData?.status_composition?.filter((item) => item.value > 0) || []
   const performanceData = dashboardData?.performance || []
   const moodTrendData = dashboardData?.mood_trend || []
+  const kpiData = dashboardData?.kpi_data || [];
 
   const PIE_COLORS = {
     not_started: "#64748b",
@@ -429,8 +431,8 @@ export default function StatisticsPage({ currentUser }) {
 
           {/* Enhanced Admin User Selection */}
           {(currentUser?.role === "admin" || currentUser?.role === "semi_admin") && (
-            <div className="mt-6 md:mt-8 p-4 md:p-6 bg-white border-2 border-blue-100 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 animate-in slide-in-from-left duration-700">
-              <label className="block text-sm font-bold text-slate-900 mb-3 md:mb-4 flex items-center gap-2">
+            <div className="mt-6 md:mt-8 p-4 md:p-6 bg-white border-2 border-blue-100 rounded-2xl shadow-lg hover:shadow-xl transition-all  animate-in slide-in-from-left duration-700">
+              <label className="text-sm font-bold text-slate-900 mb-3 md:mb-4 flex items-center gap-2">
                 <Users className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
                 Filter berdasarkan pengguna
               </label>
@@ -457,7 +459,7 @@ export default function StatisticsPage({ currentUser }) {
 
           {/* Enhanced Custom Date Range */}
           {period === "custom" && (
-            <div className="mt-4 md:mt-6 p-4 md:p-6 bg-white border-2 border-blue-100 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 animate-in slide-in-from-bottom duration-700">
+            <div className="mt-4 md:mt-6 p-4 md:p-6 bg-white border-2 border-blue-100 rounded-2xl shadow-lg hover:shadow-xl transition-all animate-in slide-in-from-bottom duration-700">
               <p className="text-sm font-bold text-slate-900 mb-3 md:mb-4 flex items-center gap-2">
                 <Activity className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
                 Rentang Tanggal Kustom
@@ -530,6 +532,30 @@ export default function StatisticsPage({ currentUser }) {
                 <div className="animate-in slide-in-from-left duration-500 delay-600">
                   <MoodCard mood={overallMood} isLoading={isLoading} />
                 </div>
+              </div>
+            )}
+
+            {(currentUser?.role === "admin" || currentUser?.role === "semi_admin") && (
+              <div className="animate-in slide-in-from-bottom duration-700 delay-300">
+                <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                  <TrendingUp className="w-6 h-6 text-blue-500" />
+                  Key Performance Indicators (KPI)
+                </h2>
+                {isLoading ? (
+                  <div className="text-center p-6 bg-white rounded-2xl border border-blue-100 shadow-lg">
+                    <p className="text-slate-500 animate-pulse">Memuat data KPI...</p>
+                  </div>
+                ) : kpiData.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {kpiData.map(user => (
+                      <KpiCard key={user.id} user={user} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="bg-white border border-slate-200 rounded-xl p-6 text-center text-slate-500">
+                    <p>Tidak ada data KPI untuk ditampilkan pada periode atau pengguna yang dipilih.</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -650,7 +676,7 @@ export default function StatisticsPage({ currentUser }) {
                     <div className="w-full">
                       <ResponsiveContainer
                         width="100%"
-                        height={isMobile ? 300 : Math.max(320, performanceData.length * 45)}
+                        height={isMobile ? 300 : Math.max(380, performanceData.length * 45)}
                       >
                         <BarChart
                           data={performanceData}
@@ -658,7 +684,7 @@ export default function StatisticsPage({ currentUser }) {
                           margin={
                             isMobile
                               ? { top: 20, right: 20, left: 20, bottom: 60 }
-                              : { top: 20, right: 20, left: 90, bottom: 20 }
+                              : { top: 20, right: 20, left: 0, bottom: 20 }
                           }
                         >
                           <CartesianGrid
@@ -676,7 +702,7 @@ export default function StatisticsPage({ currentUser }) {
                             tickLine={false}
                             angle={isMobile ? -45 : 0}
                             textAnchor={isMobile ? "end" : "middle"}
-                            height={isMobile ? 60 : undefined}
+                            height={isMobile ? 80 : undefined}
                             width={isMobile ? undefined : 85}
                           />
                           <YAxis
