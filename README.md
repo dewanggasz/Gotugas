@@ -8,7 +8,7 @@
 </p>
 
 
-# Taskwise - Sistem Manajemen Tugas Kolaboratif
+# Gotugas - Sistem Manajemen Tugas Kolaboratif
 Taskwise adalah aplikasi full-stack yang dirancang untuk membantu tim mengelola tugas secara efisien. Dengan antarmuka yang modern dan fitur kolaborasi yang lengkap, Taskwise memungkinkan pengguna untuk melacak kemajuan proyek, berdiskusi, dan berbagi file dalam satu platform terpusat.
 ## ✨ Fitur Utama
 - **Manajemen Tugas Lengkap:** Pengguna dapat membuat, membaca, mengedit, dan menghapus (CRUD) tugas mereka sendiri.
