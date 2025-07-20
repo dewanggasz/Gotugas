@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/dewanggasz/Task-management/blob/main/taskwise-client/public/gtg.svg" width="300" alt="GotuGas Logo" />
+  <img src="https://github.com/dewanggasz/Task-management/blob/main/taskwise-client/public/gtg.png" width="300" alt="GotuGas Logo" />
   <br />
   <img src="https://img.shields.io/badge/version-1.0.0-blue?style=for-the-badge&logo=semantic-release" alt="Version 1.0.0" />
   <br /><br />
