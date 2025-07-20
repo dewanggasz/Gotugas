@@ -45,7 +45,6 @@ Proyek ini dibangun menggunakan teknologi modern untuk backend dan frontend.
 - Bahasa: PHP 8.2+
 - Database: MySQL
 - Autentikasi API: Laravel Sanctum
-- Panel Admin: Filament 3.3
 - Tugas Latar Belakang: Laravel Queues
 ### Frontend (React Client)
 - Framework/Library: React
