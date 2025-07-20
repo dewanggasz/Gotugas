@@ -55,6 +55,20 @@ Proyek ini dibangun menggunakan teknologi modern untuk backend dan frontend.
 - Permintaan API: Axios
 - Routing: React Router DOM
 - Notifikasi UI: React Hot Toast
+## 🖼️ Cuplikan Halaman Website
+
+### 📊 Analytics Page
+![Analytics Page](https://github.com/dewanggasz/Task-management/blob/main/taskwise-client/public/doc/tugas.png)
+
+### 📘 Task Page
+![Task Page](https://github.com/dewanggasz/Task-management/blob/main/taskwise-client/public/doc/tugas.png)
+
+### 📊 User Management
+![User Management](https://github.com/dewanggasz/Task-management/blob/main/taskwise-client/public/doc/pengguna.png)
+
+### 📘 Jurnal Harian
+![Journal Page](https://github.com/dewanggasz/Task-management/blob/main/taskwise-client/public/doc/jurnal.png)
+
 ## ⚙️ Panduan Instalasi & Menjalankan Proyek
 Untuk menjalankan proyek ini di lingkungan lokal Anda, ikuti langkah-langkah di bawah ini.
 ### Prasyarat
