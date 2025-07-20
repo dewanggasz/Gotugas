@@ -58,7 +58,7 @@ Proyek ini dibangun menggunakan teknologi modern untuk backend dan frontend.
 ## 🖼️ Cuplikan Halaman Website
 
 ### 📊 Analytics Page
-![Analytics Page](https://github.com/dewanggasz/Task-management/blob/main/taskwise-client/public/doc/tugas.png)
+![Analytics Page](https://github.com/dewanggasz/Task-management/blob/main/taskwise-client/public/doc/analisis.png)
 
 ### 📘 Task Page
 ![Task Page](https://github.com/dewanggasz/Task-management/blob/main/taskwise-client/public/doc/tugas.png)
