@@ -29,7 +29,7 @@ export default function LoginPage({ onLoginSuccess }) {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 sm:px-6 lg:px-8">
       <div className="bg-white border border-gray-100 rounded-2xl shadow-sm w-full max-w-md p-6 sm:p-8 lg:p-10">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-light text-gray-900 tracking-tight mb-2">TaskWise</h1>
+          <h1 className="text-3xl font-light text-gray-900 tracking-tight mb-2">GotuGas</h1>
           <p className="text-gray-600 text-sm">Masuk ke akun Anda</p>
         </div>
 

@@ -68,9 +68,10 @@ export default function ClientLayout({ activePage, setActivePage, onLogout, curr
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-14">
+          <div className="flex justify-between items-center h-18">
             <div className="flex-shrink-0">
-              <h1 className="text-xl font-bold text-slate-900 tracking-tight">TaskWise</h1>
+              <img src="/public/GOTuGas.svg" alt="GotuGas Logo" className="w-40" />
+              {/* <h1 className="text-xl font-bold text-slate-900 tracking-tight">GotuGas</h1> */}
             </div>
             <div className="hidden md:flex items-center space-x-4">
               <nav className="flex items-center space-x-1">
