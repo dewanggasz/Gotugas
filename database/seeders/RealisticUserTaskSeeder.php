@@ -8,6 +8,7 @@ use App\Models\Task;
 use App\Models\Journal;
 use App\Models\JournalNote;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Hash;
 
 class RealisticUserTaskSeeder extends Seeder
 {
@@ -18,10 +19,70 @@ class RealisticUserTaskSeeder extends Seeder
     {
         $this->command->info('Memulai seeder data besar dengan logika realistis...');
 
-        // === Konfigurasi Utama ===
-        $numberOfUsers = 500;
-        $tasksPerUser = rand(50, 100);
+        // === 1. Konfigurasi dan Pembuatan Pengguna ===
+        $this->command->info("Membuat 20 pengguna dengan peran spesifik...");
 
+        // Hapus pengguna lama untuk memastikan kebersihan data
+        User::query()->delete();
+
+        // Buat 2 Admin
+        User::factory()->create([
+            'name' => 'Admin Utama',
+            'email' => 'admin@taskwise.com',
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+        ]);
+        User::factory()->create([
+            'name' => 'Admin Cadangan',
+            'email' => 'admin2@taskwise.com',
+            'password' => Hash::make('password'),
+            'role' => 'admin',
+        ]);
+
+        // Buat 3 Semi-Admin
+        User::factory()->count(3)->create(['role' => 'semi_admin']);
+
+        // Buat 15 Employee
+        User::factory()->count(15)->create(['role' => 'employee']);
+        
+        $allUsers = User::all();
+        $nonAdminUsers = $allUsers->whereNotIn('role', ['admin']);
+        $this->command->info("Total {$allUsers->count()} pengguna berhasil dibuat.");
+
+
+        // === 2. Membuat Data Jurnal & Mood Realistis ===
+        $this->command->info('Membuat data jurnal dan mood untuk pengguna non-admin...');
+        $journalProgressBar = $this->command->getOutput()->createProgressBar($nonAdminUsers->count());
+        $journalProgressBar->start();
+
+        foreach ($nonAdminUsers as $user) {
+            // Buat entri jurnal untuk sebagian besar hari dalam 2 tahun terakhir
+            for ($d = 0; $d < 730; $d++) {
+                // 85% kemungkinan ada entri jurnal pada satu hari
+                if (rand(1, 100) <= 85) {
+                    $entryDate = Carbon::now()->subDays($d);
+                    $journal = Journal::factory()->create([
+                        'user_id' => $user->id,
+                        'entry_date' => $entryDate,
+                    ]);
+
+                    // 40% kemungkinan jurnal memiliki catatan tambahan
+                    if (rand(1, 100) <= 40) {
+                        JournalNote::factory()->count(rand(1, 3))->create([
+                            'journal_id' => $journal->id,
+                        ]);
+                    }
+                }
+            }
+            $journalProgressBar->advance();
+        }
+        $journalProgressBar->finish();
+        $this->command->info("\nData jurnal berhasil dibuat.");
+
+
+        // === 3. Membuat Data Tugas Skala Besar ===
+        $this->command->info('Memulai pembuatan tugas skala besar...');
+        $tasksPerUserRange = [1800, 2500]; // Rentang tugas per pengguna agar totalnya > 40.000
         $tasksByDivision = [
             'Management' => ['Review laporan keuangan', 'Finalisasi rencana strategis', 'Rapat evaluasi kinerja', 'Menyiapkan materi presentasi investor'],
             'HR' => ['Proses rekrutmen', 'Mengadakan pelatihan kepemimpinan', 'Evaluasi sistem penggajian', 'Menyiapkan acara outing'],
@@ -33,62 +94,46 @@ class RealisticUserTaskSeeder extends Seeder
         ];
         $divisions = array_keys($tasksByDivision);
         $statuses = ['not_started', 'in_progress', 'completed', 'cancelled'];
-        
-        $this->command->info("Membuat {$numberOfUsers} pengguna...");
-        
-        // Buat semua pengguna terlebih dahulu
-        User::factory()->count($numberOfUsers)->create();
-        $allUsers = User::all();
-        
-        $this->command->info("Pengguna berhasil dibuat. Mempersiapkan data lainnya...");
+        $priorities = ['low', 'medium', 'high'];
 
-        // =================================================================
-        // === Langkah 1: Membuat Data Jurnal dan Catatan Harian (Didahulukan) ===
-        // =================================================================
-        $this->command->info('Membuat data jurnal dan catatan harian...');
-
-        foreach ($allUsers as $user) {
-            for ($d = 0; $d < 365; $d++) {
-                if (rand(0, 5) === 0) continue;
-
-                $journal = Journal::factory()->create([
-                    'user_id' => $user->id,
-                    'entry_date' => Carbon::now()->subDays($d),
-                ]);
-
-                if (rand(0, 3) > 0) {
-                    JournalNote::factory()->count(rand(1, 2))->create([
-                        'journal_id' => $journal->id,
-                    ]);
-                }
-            }
-        }
-        $this->command->info('Jurnal dan catatan harian berhasil dibuat.');
-        
-        // =================================================================
-        // === Langkah 2: Membuat Data Tugas dan Kolaborator ===
-        // =================================================================
-        $this->command->info('Memulai pembuatan tugas dan kolaborator...');
+        $taskProgressBar = $this->command->getOutput()->createProgressBar($allUsers->count());
+        $taskProgressBar->start();
 
         foreach ($allUsers as $creator) {
-            $creator->division = $divisions[array_rand($divisions)];
-            $creator->role = rand(1, 10) > 8 ? 'admin' : 'employee';
+            $creator->division = fake()->randomElement($divisions);
             $creator->save();
             
             $divisionTasks = $tasksByDivision[$creator->division];
+            $tasksToCreate = rand($tasksPerUserRange[0], $tasksPerUserRange[1]);
 
-            for ($i = 0; $i < $tasksPerUser; $i++) {
+            for ($i = 0; $i < $tasksToCreate; $i++) {
+                $createdAt = Carbon::now()->subDays(rand(1, 730));
+                $dueDate = $createdAt->copy()->addDays(rand(5, 60));
+                $status = $statuses[array_rand($statuses)];
+                $updatedAt = $createdAt;
+
+                if ($status === 'completed') {
+                    if (rand(1, 10) <= 8) {
+                        $updatedAt = fake()->dateTimeBetween($createdAt, $dueDate);
+                    } else {
+                        $updatedAt = $dueDate->copy()->addDays(rand(1, 15));
+                    }
+                }
+
                 $task = Task::factory()->create([
                     'user_id' => $creator->id,
-                    'title' => $divisionTasks[array_rand($divisionTasks)] . " (#" . rand(1,1000) . ")",
-                    'status' => $statuses[array_rand($statuses)],
-                    'created_at' => Carbon::now()->subDays(rand(0, 730)),
-                    'due_date' => Carbon::now()->addDays(rand(-60, 180)),
+                    'title' => $divisionTasks[array_rand($divisionTasks)] . " (#" . rand(1, 1000) . ")",
+                    'status' => $status,
+                    'priority' => $priorities[array_rand($priorities)],
+                    'created_at' => $createdAt,
+                    'updated_at' => $updatedAt,
+                    'due_date' => $dueDate,
                 ]);
 
                 $collaboratorsToSync = [];
                 $collaboratorsToSync[$creator->id] = ['permission' => 'edit'];
 
+                // Tambahkan hingga 2 kolaborator acak
                 if (rand(0, 1)) {
                     $collaborators = $allUsers->where('id', '!=', $creator->id)->random(rand(1, 2));
                     foreach ($collaborators as $collaborator) {
@@ -97,9 +142,9 @@ class RealisticUserTaskSeeder extends Seeder
                 }
                 $task->collaborators()->sync($collaboratorsToSync);
             }
+            $taskProgressBar->advance();
         }
-        $this->command->info('Tugas dan kolaborator selesai dibuat.');
-
-        $this->command->info("SELESAI! Semua data realistis berhasil dibuat.");
+        $taskProgressBar->finish();
+        $this->command->info("\nSELESAI! Semua data realistis skala besar berhasil dibuat.");
     }
 }
