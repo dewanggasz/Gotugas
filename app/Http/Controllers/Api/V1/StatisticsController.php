@@ -22,20 +22,20 @@ class StatisticsController extends Controller
     {
         $user = $request->user();
         $period = $request->input('period', '30d');
-        $endDate = now();
+        $endDate = now()->endOfDay(); // Pastikan akhir hari
 
         if ($period === 'custom') {
             $request->validate(['start_date' => 'required|date', 'end_date' => 'required|date|after_or_equal:start_date']);
-            $startDate = Carbon::parse($request->input('start_date'));
-            $endDate = Carbon::parse($request->input('end_date'));
+            $startDate = Carbon::parse($request->input('start_date'))->startOfDay();
+            $endDate = Carbon::parse($request->input('end_date'))->endOfDay();
         } elseif ($period === 'this_year') {
             $startDate = $endDate->copy()->startOfYear();
         } elseif ($period === '90d') {
-            $startDate = $endDate->copy()->subDays(89);
+            $startDate = $endDate->copy()->subDays(89)->startOfDay();
         } elseif ($period === '7d') {
-        $startDate = $endDate->copy()->subDays(6);
+            $startDate = $endDate->copy()->subDays(6)->startOfDay();
         } else { // default to 30d
-            $startDate = $endDate->copy()->subDays(29);
+            $startDate = $endDate->copy()->subDays(29)->startOfDay();
         }
 
         $baseQuery = Task::query();
@@ -72,7 +72,7 @@ class StatisticsController extends Controller
             'trend' => $this->getTrendData(clone $baseQuery, $startDate, $endDate, $period),
             'status_composition' => $this->getStatusCompositionData(clone $baseQuery, $startDate, $endDate),
             'performance' => $performanceData,
-            'mood_trend' => $this->getMoodTrendData($user, $startDate, $endDate),
+            'mood_trend' => $this->getMoodTrendData($user, $startDate, $endDate, $period),
             'individual_mood' => $individualMoodData,
             'overall_mood' => $this->getOverallMoodSummary($user, $startDate, $endDate),
             'kpi_data' => $this->getKpiData($user, $startDate, $endDate, $selectedUserId),
@@ -97,32 +97,61 @@ class StatisticsController extends Controller
         ];
     }
 
+    /**
+     * --- LOGIKA BARU UNTUK GRAFIK TUGAS DINAMIS ---
+     * Mengelompokkan data tren pembuatan tugas berdasarkan rentang waktu.
+     */
     private function getTrendData(Builder $query, Carbon $startDate, Carbon $endDate, string $period): Collection
     {
-        $data = new Collection();
-        $query->whereBetween('created_at', [$startDate, $endDate]);
+        $daysDifference = $startDate->diffInDays($endDate);
 
-        if ($period === 'this_year') {
-            $tasks = $query->select(DB::raw("DATE_FORMAT(created_at, '%Y-%m') as month"), DB::raw('COUNT(*) as count'))
-                ->groupBy('month')->pluck('count', 'month');
-            
-            $currentDate = $startDate->copy();
-            while ($currentDate <= $endDate) {
-                $monthKey = $currentDate->format('Y-m');
-                $data->push(['name' => $currentDate->format('M'), 'Tugas Dibuat' => $tasks->get($monthKey, 0)]);
-                $currentDate->addMonthNoOverflow();
-            }
+        $groupByFormat = '';
+        $periodIteratorInterval = '';
+
+        if ($period === 'this_year' || ($period === 'custom' && $daysDifference > 90)) {
+            $groupByFormat = '%Y-%m';
+            $periodIteratorInterval = '1 month';
+        } elseif ($period === '90d' || ($period === 'custom' && $daysDifference > 31)) {
+            $groupByFormat = '%x-%v';
+            $periodIteratorInterval = '1 week';
         } else {
-            $tasks = $query->select(DB::raw("DATE(created_at) as date"), DB::raw('COUNT(*) as count'))
-                ->groupBy('date')->pluck('count', 'date');
-            
-            $dateRange = Carbon::parse($startDate)->toPeriod($endDate);
-            foreach($dateRange as $date) {
-                $dateKey = $date->format('Y-m-d');
-                $data->push(['name' => $date->format('d M'), 'Tugas Dibuat' => $tasks->get($dateKey, 0)]);
-            }
+            $groupByFormat = '%Y-%m-%d';
+            $periodIteratorInterval = '1 day';
         }
-        return $data;
+
+        $actualData = $query->whereBetween('created_at', [$startDate, $endDate])
+            ->select(
+                DB::raw("DATE_FORMAT(created_at, '{$groupByFormat}') as period_key"),
+                DB::raw('COUNT(*) as count')
+            )
+            ->groupBy('period_key')
+            ->orderBy('period_key')
+            ->pluck('count', 'period_key');
+
+        $trendData = new Collection();
+        $periodIterator = CarbonPeriod::create($startDate, $periodIteratorInterval, $endDate);
+
+        foreach ($periodIterator as $date) {
+            $key = '';
+            $label = '';
+            if ($periodIteratorInterval === '1 month') {
+                $key = $date->format('Y-m');
+                $label = $date->isoFormat('MMM YYYY');
+            } elseif ($periodIteratorInterval === '1 week') {
+                $key = $date->format('o-W'); // ISO-8601 format Tahun-Minggu
+                $label = 'Minggu ' . $date->format('W');
+            } else {
+                $key = $date->format('Y-m-d');
+                $label = $date->format('d M');
+            }
+
+            $trendData->push([
+                'name' => $label,
+                'Tugas Dibuat' => $actualData->get($key, 0),
+            ]);
+        }
+
+        return $trendData;
     }
 
     private function getStatusCompositionData(Builder $query, Carbon $startDate, Carbon $endDate): Collection
@@ -196,7 +225,6 @@ class StatisticsController extends Controller
         ];
     }
 
-    // --- Ubah signature method ini untuk menerima $selectedUserId ---
     private function getPerformanceData(Carbon $startDate, Carbon $endDate, ?string $selectedUserId): Collection
     {
         $query = User::query();
@@ -230,21 +258,32 @@ class StatisticsController extends Controller
             ];
         });
     }
-    private function getMoodTrendData($user, Carbon $startDate, Carbon $endDate): Collection
+
+    private function getMoodTrendData($user, Carbon $startDate, Carbon $endDate, string $period): Collection
     {
-        $moodScoreCase = "CASE journals.mood 
-            WHEN 'joyful' THEN 5 
-            WHEN 'excited' THEN 4 
-            WHEN 'happy' THEN 3 
-            WHEN 'neutral' THEN 2 
-            WHEN 'sad' THEN 1 
-            ELSE 0 END";
+        $daysDifference = $startDate->diffInDays($endDate);
+
+        $groupByFormat = '';
+        $periodIteratorInterval = '';
+
+        if ($period === 'this_year' || ($period === 'custom' && $daysDifference > 90)) {
+            $groupByFormat = '%Y-%m';
+            $periodIteratorInterval = '1 month';
+        } elseif ($period === '90d' || ($period === 'custom' && $daysDifference > 31)) {
+            $groupByFormat = '%x-%v';
+            $periodIteratorInterval = '1 week';
+        } else {
+            $groupByFormat = '%Y-%m-%d';
+            $periodIteratorInterval = '1 day';
+        }
+
+        $moodScoreCase = "CASE journals.mood WHEN 'joyful' THEN 5 WHEN 'excited' THEN 4 WHEN 'happy' THEN 3 WHEN 'neutral' THEN 2 WHEN 'sad' THEN 1 ELSE 0 END";
 
         $query = Journal::query()
             ->whereBetween('entry_date', [$startDate, $endDate])
             ->join('users', 'journals.user_id', '=', 'users.id')
             ->select(
-                'entry_date',
+                DB::raw("DATE_FORMAT(entry_date, '{$groupByFormat}') as period_key"),
                 DB::raw("AVG($moodScoreCase) as avg_score")
             );
 
@@ -254,24 +293,37 @@ class StatisticsController extends Controller
             $query->where('journals.user_id', $user->id);
         }
         
-        $actualData = $query->groupBy('entry_date')
-                            ->orderBy('entry_date')
+        $actualData = $query->groupBy('period_key')
+                            ->orderBy('period_key')
                             ->get()
-                            ->keyBy(fn($item) => Carbon::parse($item->entry_date)->format('Y-m-d'));
+                            ->keyBy('period_key');
 
-        $period = CarbonPeriod::create($startDate, $endDate);
         $trendData = new Collection();
+        $periodIterator = CarbonPeriod::create($startDate, $periodIteratorInterval, $endDate);
 
-        foreach ($period as $date) {
-            $dateString = $date->format('Y-m-d');
+        foreach ($periodIterator as $date) {
+            $key = '';
+            $label = '';
+            if ($periodIteratorInterval === '1 month') {
+                $key = $date->format('Y-m');
+                $label = $date->isoFormat('MMM YYYY');
+            } elseif ($periodIteratorInterval === '1 week') {
+                $key = $date->format('o-W');
+                $label = 'Minggu ' . $date->format('W');
+            } else {
+                $key = $date->format('Y-m-d');
+                $label = $date->format('d M');
+            }
+            
             $trendData->push([
-                'name' => $date->format('d M'),
-                'score' => $actualData->has($dateString) ? (float) $actualData->get($dateString)->avg_score : null,
+                'name' => $label,
+                'score' => $actualData->has($key) ? (float) $actualData->get($key)->avg_score : null,
             ]);
         }
 
         return $trendData;
     }
+    
      private function getKpiData($loggedInUser, Carbon $startDate, Carbon $endDate, ?string $selectedUserId): Collection
     {
         $usersQuery = User::select(['id', 'name', 'profile_photo_path', 'jabatan', 'role'])
@@ -284,10 +336,8 @@ class StatisticsController extends Controller
         $users = $usersQuery->get();
         $userIds = $users->pluck('id');
 
-        // CASE untuk poin dasar berdasarkan prioritas
         $basePointsCase = "CASE priority WHEN 'high' THEN 10 WHEN 'medium' THEN 5 WHEN 'low' THEN 2 ELSE 0 END";
 
-        // CASE untuk pengali berdasarkan ketepatan waktu
         $timelinessMultiplierCase = "
             CASE 
                 WHEN status = 'completed' AND (updated_at <= due_date OR due_date IS NULL) THEN 1.0
@@ -297,7 +347,6 @@ class StatisticsController extends Controller
             END
         ";
         
-        // Subquery untuk menghitung skor per tugas
         $tasksWithScores = DB::table('tasks')
             ->select(
                 'id',
@@ -310,7 +359,6 @@ class StatisticsController extends Controller
             )
             ->whereBetween('created_at', [$startDate, $endDate]);
 
-        // Query utama untuk mengagregasi skor per kolaborator
         $kpiResults = DB::table('task_user')
             ->joinSub($tasksWithScores, 'tasks_with_scores', function ($join) {
                 $join->on('task_user.task_id', '=', 'tasks_with_scores.id');
@@ -334,10 +382,9 @@ class StatisticsController extends Controller
             if ($maxPossibleScore > 0) {
                 $efficiencyScore = ($actualScore / $maxPossibleScore) * 100;
             } else {
-                $efficiencyScore = 0; // Atau 100 jika tidak ada tugas? 0 lebih masuk akal.
+                $efficiencyScore = 0;
             }
 
-            // Batasi skor antara 0 dan 100, lalu bulatkan
             $finalScore = round(max(0, min(100, $efficiencyScore)));
 
             return [
@@ -345,8 +392,8 @@ class StatisticsController extends Controller
                 'name' => $user->name,
                 'profile_photo_url' => $user->profile_photo_url,
                 'jabatan' => $user->jabatan,
-                'efficiency_score' => $finalScore, // Mengganti kpi_score
-                'stats' => [ // Data tambahan jika diperlukan
+                'efficiency_score' => $finalScore,
+                'stats' => [
                     'actual_score' => round($actualScore, 2),
                     'max_possible_score' => $maxPossibleScore
                 ]
