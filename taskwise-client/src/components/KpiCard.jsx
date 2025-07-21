@@ -23,7 +23,7 @@ export default function KpiCard({ user }) {
           className="w-14 h-14 md:w-16 md:h-16 rounded-full object-cover border-2 border-slate-100"
         />
         <div className="flex-1">
-          <h4 className="font-bold text-base md:text-lg text-slate-800 truncate">{user.name}</h4>
+          <h4 className="font-bold text-sm md:text-sm text-slate-800 truncate w-40 md:w-40">{user.name}</h4>
           <p className="text-xs text-slate-500">{user.jabatan || "Tidak ada jabatan"}</p>
           <div
             className={`mt-2 inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-xs font-semibold ${level.bg} ${level.color}`}
