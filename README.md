@@ -1,7 +1,7 @@
 <p align="center">
   <img src="https://github.com/dewanggasz/Task-management/blob/main/taskwise-client/public/gtg.png" width="300" alt="GotuGas Logo" />
   <br />
-  <img src="https://img.shields.io/badge/version-1.1.0-blue?style=for-the-badge&logo=semantic-release" alt="Version 1.1.0" />
+  <img src="https://img.shields.io/badge/version-1.1.0-blue?style=for-the-badge&logo=semantic-release" alt="Version 1.1.1" />
   <br /><br />
   <img src="https://img.shields.io/badge/frontend-React_19.1.0-61DAFB?style=for-the-badge&logo=react&logoColor=white" alt="React Badge" />
   <img src="https://img.shields.io/badge/backend-Laravel_12.0-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel Badge" />
@@ -57,7 +57,7 @@ Proyek ini dibangun menggunakan teknologi modern untuk backend dan frontend.
 ## 🖼️ Cuplikan Halaman Website
 
 ### 📊 Analytics Page
-![Analytics Page](https://github.com/dewanggasz/Task-management/blob/main/taskwise-client/public/doc/analisis.png)
+![Analytics Page](https://github.com/dewanggasz/Gotugas/blob/main/taskwise-client/public/doc/analytic.png)
 
 ### 📘 Task Page
 ![Task Page](https://github.com/dewanggasz/Task-management/blob/main/taskwise-client/public/doc/tugas.png)
