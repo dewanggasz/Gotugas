@@ -47,7 +47,7 @@ const CustomSelect = ({ options, value, onChange, placeholder, icon: Icon, class
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-2.5 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:bg-slate-50 hover:border-slate-300 group min-h-[40px]"
+        className="w-full flex items-center justify-between px-4 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white hover:bg-slate-50 hover:border-slate-300 group min-h-[40px]"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
@@ -325,7 +325,7 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
             value={status}
             onChange={setStatus}
             placeholder="Pilih Status"
-            icon={Filter}
+            
           />
         </div>
         {/* Kolom Prioritas (BARU) */}
@@ -338,7 +338,7 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
             value={priority}
             onChange={setPriority}
             placeholder="Pilih Prioritas"
-            icon={Zap}
+           
           />
         </div>
         {/* Kolom Jatuh Tempo */}
