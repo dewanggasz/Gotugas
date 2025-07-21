@@ -209,7 +209,8 @@ class StatisticsController extends Controller
 
         return $query->with([
             'createdTasks' => function ($query) use ($startDate, $endDate) {
-                $query->whereBetween('created_at', [$startDate, $endDate]);
+                $query->select(['id', 'user_id', 'status', 'due_date', 'updated_at'])
+                    ->whereBetween('created_at', [$startDate, $endDate]);
             }
         ])->get()->map(function ($user) {
             $tasksInPeriod = $user->createdTasks;
@@ -271,69 +272,85 @@ class StatisticsController extends Controller
 
         return $trendData;
     }
-    private function getKpiData($loggedInUser, Carbon $startDate, Carbon $endDate, ?string $selectedUserId): Collection
+     private function getKpiData($loggedInUser, Carbon $startDate, Carbon $endDate, ?string $selectedUserId): Collection
     {
-        // Tentukan pengguna mana yang akan di-query berdasarkan hak akses
-        $query = User::query();
+        $usersQuery = User::select(['id', 'name', 'profile_photo_path', 'jabatan', 'role'])
+            ->whereIn('role', ['employee', 'semi_admin']);
 
-        if ($loggedInUser->isAdmin()) {
-            // Admin bisa melihat semua semi_admin dan employee
-            $query->whereIn('role', ['employee', 'semi_admin']);
-        } elseif ($loggedInUser->role === 'semi_admin') {
-            // Semi-admin bisa melihat sesama semi_admin dan employee
-            $query->whereIn('role', ['employee', 'semi_admin']);
-        } else {
-            // Employee hanya melihat diri sendiri
-            $query->where('id', $loggedInUser->id);
-        }
-
-        // Jika ada pengguna spesifik yang dipilih dari filter, fokus hanya pada pengguna itu
         if ($selectedUserId) {
-            $query->where('id', $selectedUserId);
+            $usersQuery->where('id', $selectedUserId);
         }
+
+        $users = $usersQuery->get();
+        $userIds = $users->pluck('id');
+
+        // CASE untuk poin dasar berdasarkan prioritas
+        $basePointsCase = "CASE priority WHEN 'high' THEN 10 WHEN 'medium' THEN 5 WHEN 'low' THEN 2 ELSE 0 END";
+
+        // CASE untuk pengali berdasarkan ketepatan waktu
+        $timelinessMultiplierCase = "
+            CASE 
+                WHEN status = 'completed' AND (updated_at <= due_date OR due_date IS NULL) THEN 1.0
+                WHEN status = 'completed' AND updated_at > due_date THEN 0.5
+                WHEN status != 'completed' AND status != 'cancelled' AND due_date < NOW() THEN -1.0
+                ELSE 0.0
+            END
+        ";
         
-        // Ambil pengguna beserta tugas-tugas mereka dalam rentang periode yang dipilih
-        $users = $query->with(['createdTasks' => function ($query) use ($startDate, $endDate) {
-            $query->whereBetween('created_at', [$startDate, $endDate]);
-        }, 'tasks' => function ($query) use ($startDate, $endDate) {
-            $query->whereBetween('created_at', [$startDate, $endDate]);
-        }])->get();
+        // Subquery untuk menghitung skor per tugas
+        $tasksWithScores = DB::table('tasks')
+            ->select(
+                'id',
+                'priority',
+                'status',
+                'updated_at',
+                'due_date',
+                DB::raw("($basePointsCase) as base_points"),
+                DB::raw("($basePointsCase * $timelinessMultiplierCase) as actual_score_contribution")
+            )
+            ->whereBetween('created_at', [$startDate, $endDate]);
 
-        // Hitung skor KPI untuk setiap pengguna
-        return $users->map(function ($user) {
-            // Gabungkan tugas yang dibuat dan tugas kolaborasi, lalu pastikan unik
-            $allTasks = $user->createdTasks->merge($user->tasks)->unique('id');
+        // Query utama untuk mengagregasi skor per kolaborator
+        $kpiResults = DB::table('task_user')
+            ->joinSub($tasksWithScores, 'tasks_with_scores', function ($join) {
+                $join->on('task_user.task_id', '=', 'tasks_with_scores.id');
+            })
+            ->select(
+                'task_user.user_id',
+                DB::raw('SUM(tasks_with_scores.base_points) as max_possible_score'),
+                DB::raw('SUM(tasks_with_scores.actual_score_contribution) as actual_score')
+            )
+            ->whereIn('task_user.user_id', $userIds)
+            ->groupBy('task_user.user_id')
+            ->get()
+            ->keyBy('user_id');
 
-            $completedOnTime = $allTasks->where('status', 'completed')
-                                        ->whereNotNull('due_date')
-                                        ->filter(fn($task) => $task->updated_at->lte($task->due_date))
-                                        ->count();
+        return $users->map(function ($user) use ($kpiResults) {
+            $userKpi = $kpiResults->get($user->id);
 
-            $completedLate = $allTasks->where('status', 'completed')
-                                    ->whereNotNull('due_date')
-                                    ->filter(fn($task) => $task->updated_at->gt($task->due_date))
-                                    ->count();
+            $maxPossibleScore = $userKpi->max_possible_score ?? 0;
+            $actualScore = $userKpi->actual_score ?? 0;
 
-            $stillOverdue = $allTasks->where('status', '!=', 'completed')
-                                    ->whereNotNull('due_date')
-                                    ->where('due_date', '<', now())
-                                    ->count();
+            if ($maxPossibleScore > 0) {
+                $efficiencyScore = ($actualScore / $maxPossibleScore) * 100;
+            } else {
+                $efficiencyScore = 0; // Atau 100 jika tidak ada tugas? 0 lebih masuk akal.
+            }
 
-            // Terapkan formula KPI
-            $kpiScore = ($completedOnTime * 15) + ($completedLate * 5) - ($stillOverdue * 10);
+            // Batasi skor antara 0 dan 100, lalu bulatkan
+            $finalScore = round(max(0, min(100, $efficiencyScore)));
 
             return [
                 'id' => $user->id,
                 'name' => $user->name,
                 'profile_photo_url' => $user->profile_photo_url,
                 'jabatan' => $user->jabatan,
-                'kpi_score' => $kpiScore,
-                'stats' => [
-                    'completed_on_time' => $completedOnTime,
-                    'completed_late' => $completedLate,
-                    'still_overdue' => $stillOverdue,
+                'efficiency_score' => $finalScore, // Mengganti kpi_score
+                'stats' => [ // Data tambahan jika diperlukan
+                    'actual_score' => round($actualScore, 2),
+                    'max_possible_score' => $maxPossibleScore
                 ]
             ];
-        })->sortByDesc('kpi_score')->values(); // Urutkan dari skor tertinggi
+        })->sortByDesc('efficiency_score')->values();
     }
 }

@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-// --- 1. Impor fungsi getTask ---
 import { getTasks, getTask, createTask, updateTask, deleteTask, getUsers } from "../services/api"
 import Modal from "../components/Modal"
 import TaskForm from "../components/TaskForm"
@@ -24,9 +23,10 @@ import {
   PlayCircle,
   Calendar,
   Target,
+  Zap, // Impor ikon untuk Prioritas
 } from "lucide-react"
 
-// ... (semua komponen helper seperti useDebounce, CustomSelect, dll. tetap sama)
+// Hook untuk debouncing input
 function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value)
   useEffect(() => {
@@ -40,6 +40,7 @@ function useDebounce(value, delay) {
   return debouncedValue
 }
 
+// Komponen Select Kustom
 const CustomSelect = ({ options, value, onChange, placeholder, icon: Icon, className = "" }) => {
   const [isOpen, setIsOpen] = useState(false)
   const selectRef = useRef(null)
@@ -111,32 +112,36 @@ const CustomSelect = ({ options, value, onChange, placeholder, icon: Icon, class
   )
 }
 
+// Komponen Paginasi (DIPERBAIKI)
 const Pagination = ({ meta, onPageChange }) => {
   if (!meta || meta.last_page <= 1) return null
 
   const getVisiblePages = () => {
     const current = meta.current_page
     const total = meta.last_page
-    const delta = 2
+    const delta = 1 // Menampilkan 1 halaman di setiap sisi halaman saat ini
+    const left = current - delta
+    const right = current + delta
     const range = []
     const rangeWithDots = []
 
-    for (let i = Math.max(2, current - delta); i <= Math.min(total - 1, current + delta); i++) {
-      range.push(i)
+    for (let i = 1; i <= total; i++) {
+      if (i === 1 || i === total || (i >= left && i <= right)) {
+        range.push(i)
+      }
     }
 
-    if (current - delta > 2) {
-      rangeWithDots.push(1, "...")
-    } else {
-      rangeWithDots.push(1)
-    }
-
-    rangeWithDots.push(...range)
-
-    if (current + delta < total - 1) {
-      rangeWithDots.push("...", total)
-    } else if (total > 1) {
-      rangeWithDots.push(total)
+    let l
+    for (const i of range) {
+      if (l) {
+        if (i - l === 2) {
+          rangeWithDots.push(l + 1)
+        } else if (i - l !== 1) {
+          rangeWithDots.push("...")
+        }
+      }
+      rangeWithDots.push(i)
+      l = i
     }
 
     return rangeWithDots
@@ -194,6 +199,7 @@ const Pagination = ({ meta, onPageChange }) => {
   )
 }
 
+// Komponen Badge Status
 const StatusBadge = ({ status }) => {
   const statusConfig = {
     not_started: {
@@ -231,6 +237,28 @@ const StatusBadge = ({ status }) => {
   )
 }
 
+// Komponen Badge Prioritas
+const PriorityBadge = ({ priority }) => {
+  const priorityConfig = {
+    low: { label: "Rendah", color: "bg-gray-100 text-gray-700 border-gray-200" },
+    medium: { label: "Sedang", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+    high: { label: "Tinggi", color: "bg-red-100 text-red-700 border-red-200" },
+  }
+
+  const config = priorityConfig[priority] || priorityConfig.medium;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium border whitespace-nowrap ${config.color}`}
+    >
+      <Zap className="h-3 w-3" />
+      {config.label}
+    </span>
+  )
+}
+
+
+// Komponen Avatar
 const Avatar = ({ user, size = "sm" }) => {
   if (!user) return null
 
@@ -266,15 +294,14 @@ const Avatar = ({ user, size = "sm" }) => {
   )
 }
 
+// Komponen Avatar Kolaborator
 const CollaboratorAvatars = ({ collaborators }) => {
-  // Langsung gunakan daftar 'collaborators' karena sudah termasuk pembuat tugas
   const team = collaborators || []
 
   if (team.length === 0) {
     return <span className="text-xs text-slate-500">-</span>
   }
 
-  // Tampilkan hingga 3 avatar, sisanya akan dihitung
   const displayLimit = 3
   const displayedTeam = team.slice(0, displayLimit)
   const hiddenCount = team.length - displayedTeam.length
@@ -293,6 +320,7 @@ const CollaboratorAvatars = ({ collaborators }) => {
   )
 }
 
+// Komponen Tombol Aksi
 const ActionButtons = ({ task, onEdit, onDelete, onView, currentUser }) => {
   const canModify = task.collaborators.some((c) => c.id === currentUser?.id && c.permission === "edit")
   const canDelete = task.user?.id === currentUser?.id || currentUser?.role === "admin"
@@ -332,7 +360,15 @@ const ActionButtons = ({ task, onEdit, onDelete, onView, currentUser }) => {
   )
 }
 
+// Komponen Tampilan Tugas
 const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
+  // --- PENAMBAHAN LOG UNTUK DEBUGGING ---
+  useEffect(() => {
+    if (tasks.length > 0) {
+      console.log("Data tugas yang dirender di tabel:", tasks);
+    }
+  }, [tasks]);
+
   const formatDate = (dateString) => {
     if (!dateString) return "N/A"
     return new Date(dateString).toLocaleDateString("id-ID", {
@@ -349,54 +385,39 @@ const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
     return words.slice(0, maxWords).join(" ") + "..."
   }
 
-  const isOverdue = (dueDateString) => {
-    if (!dueDateString) return false
+  const isOverdue = (dueDateString, status) => {
+    if (!dueDateString || status === 'completed') return false
     return new Date(dueDateString) < new Date()
   }
 
   return (
     <>
-      {/* Desktop Table View with Fixed Column Widths */}
+      {/* Tampilan Tabel Desktop */}
       <div className="hidden lg:block bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="min-w-full table-fixed">
             <thead className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide w-[280px]">
-                  <div className="flex items-center gap-2">
-                    <Target className="h-3.5 w-3.5" />
-                    Tugas
-                  </div>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide w-[250px]">
+                  Tugas
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide w-[120px]">
-                  <div className="flex items-center gap-2">
-                    <Filter className="h-3.5 w-3.5" />
-                    Status
-                  </div>
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide w-[140px]">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-3.5 w-3.5" />
-                    Tim
-                  </div>
-                </th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide w-[120px]">
-                  <div className="flex items-center gap-2">
-                    <User className="h-3.5 w-3.5" />
-                    Pembuat
-                  </div>
+                  Status
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide w-[110px]">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-3.5 w-3.5" />
-                    Dibuat
-                  </div>
+                  Prioritas
                 </th>
-                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide w-[150px]">
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-3.5 w-3.5" />
-                    Jatuh Tempo
-                  </div>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide w-[140px]">
+                  Tim
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide w-[120px]">
+                  Pembuat
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide w-[110px]">
+                  Dibuat
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wide w-[120px]">
+                  Jatuh Tempo
                 </th>
                 <th className="px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wide w-[70px]">
                   Aksi
@@ -404,43 +425,40 @@ const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-100">
-              {tasks.map((task, index) => (
+              {tasks.map((task) => (
                 <tr
                   key={task.id}
                   className="hover:bg-slate-50 transition-all duration-200 group"
-                  style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  <td className="px-4 py-3 w-[280px]">
-                    <div className="flex flex-col">
-                      <div
-                        className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors truncate pr-2"
-                        title={task.title}
-                      >
-                        {truncateTitle(task.title)}
-                      </div>
+                  <td className="px-4 py-3 w-[250px]">
+                    <div
+                      className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors truncate pr-2"
+                      title={task.title}
+                    >
+                      {truncateTitle(task.title, 4)}
                     </div>
                   </td>
                   <td className="px-3 py-3 w-[120px]">
                     <StatusBadge status={task.status} />
                   </td>
+                  <td className="px-3 py-3 w-[110px]">
+                    <PriorityBadge priority={task.priority} />
+                  </td>
                   <td className="px-3 py-3 w-[140px]">
-                    <CollaboratorAvatars collaborators={task.collaborators} creator={task.user} />
+                    <CollaboratorAvatars collaborators={task.collaborators} />
                   </td>
                   <td className="px-3 py-3 w-[120px]">
-                    <div className="flex items-center">
-                      
-                      <span className="text-xs font-medium text-slate-700 truncate" title={task.user?.name}>
-                        {task.user?.name}
-                      </span>
-                    </div>
+                    <span className="text-xs font-medium text-slate-700 truncate" title={task.user?.name}>
+                      {task.user?.name}
+                    </span>
                   </td>
                   <td className="px-3 py-3 w-[110px]">
                     <span className="text-xs text-slate-600 font-medium">{formatDate(task.created_at)}</span>
                   </td>
-                  <td className="px-3 py-3 w-[150px]">
+                  <td className="px-3 py-3 w-[120px]">
                     <span
                       className={`text-xs font-medium ${
-                        isOverdue(task.due_date) ? "text-red-600 font-semibold" : "text-slate-700"
+                        isOverdue(task.due_date, task.status) ? "text-red-600 font-semibold" : "text-slate-700"
                       }`}
                     >
                       {formatDate(task.due_date)}
@@ -462,13 +480,12 @@ const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
         </div>
       </div>
 
-      {/* Mobile Card View */}
+      {/* Tampilan Kartu Mobile */}
       <div className="grid grid-cols-1 gap-4 lg:hidden">
-        {tasks.map((task, index) => (
+        {tasks.map((task) => (
           <div
             key={task.id}
             className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-300 group"
-            style={{ animationDelay: `${index * 100}ms` }}
           >
             <div className="flex justify-between items-start mb-4 gap-x-3">
               <div className="flex-1 min-w-0">
@@ -483,23 +500,20 @@ const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
             </div>
 
             <div className="space-y-3 mb-4">
+               <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <Zap className="h-3.5 w-3.5 text-slate-500" />
+                  <span className="text-sm font-medium text-slate-700">Prioritas</span>
+                </div>
+                <PriorityBadge priority={task.priority} />
+              </div>
+
               <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg">
                 <div className="flex items-center space-x-2">
                   <Users className="h-3.5 w-3.5 text-slate-500" />
                   <span className="text-sm font-medium text-slate-700">Tim</span>
                 </div>
-                <CollaboratorAvatars collaborators={task.collaborators} creator={task.user} />
-              </div>
-
-              <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg">
-                <div className="flex items-center space-x-2">
-                  <User className="h-3.5 w-3.5 text-slate-500" />
-                  <span className="text-sm font-medium text-slate-700">Pembuat</span>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Avatar user={task.user} size="sm" />
-                  <span className="text-sm font-medium text-slate-700">{task.user?.name}</span>
-                </div>
+                <CollaboratorAvatars collaborators={task.collaborators} />
               </div>
 
               <div className="flex items-center justify-between p-2.5 bg-slate-50 rounded-lg">
@@ -509,7 +523,7 @@ const TaskDisplay = ({ tasks, onEdit, onDelete, onView, currentUser }) => {
                 </div>
                 <span
                   className={`text-sm font-medium ${
-                    isOverdue(task.due_date) ? "text-red-600 font-semibold" : "text-slate-700"
+                    isOverdue(task.due_date, task.status) ? "text-red-600 font-semibold" : "text-slate-700"
                   }`}
                 >
                   {formatDate(task.due_date)}
@@ -555,12 +569,11 @@ export default function TasksPage({ currentUser }) {
 
   const [users, setUsers] = useState([])
   const [forceRefetch, setForceRefetch] = useState(0)
-  const [deletingTaskId, setDeletingTaskId] = useState(null)
 
   useEffect(() => {
     const fetchAllUsers = async () => {
       try {
-        const usersResponse = await getUsers() // getUsers() sudah cerdas
+        const usersResponse = await getUsers()
         setUsers(usersResponse.data.data)
       } catch (err) {
         console.error("Gagal memuat daftar pengguna", err)
@@ -598,22 +611,16 @@ export default function TasksPage({ currentUser }) {
     }
   }, [statusFilter, sortBy, currentPage, debouncedSearchTerm, currentUser, forceRefetch, selectedUserId])
 
-  // --- 2. LOGIKA BARU DI SINI ---
-  // Efek ini berjalan sekali saat komponen dimuat untuk menangani deep link
   useEffect(() => {
     const path = window.location.pathname;
-    // Mencocokkan URL seperti /tasks/111
     const match = path.match(/\/tasks\/(\d+)/);
     const taskIdFromUrl = match ? parseInt(match[1], 10) : null;
 
     if (taskIdFromUrl) {
       const fetchAndOpenTask = async () => {
         try {
-          console.log(`Mencoba memuat tugas dengan ID: ${taskIdFromUrl}`);
           const response = await getTask(taskIdFromUrl);
           handleOpenDetailModal(response.data.data);
-          
-          // Membersihkan URL setelah modal dibuka untuk menghindari pembukaan berulang
           window.history.replaceState(null, '', '/tasks');
         } catch (error) {
           console.error("Gagal memuat detail tugas dari URL", error);
@@ -624,7 +631,7 @@ export default function TasksPage({ currentUser }) {
 
       fetchAndOpenTask();
     }
-  }, []); // Dependensi kosong berarti ini hanya berjalan sekali
+  }, []);
 
   useEffect(() => {
     if (isEditModalOpen && editingTask) {
@@ -705,16 +712,11 @@ export default function TasksPage({ currentUser }) {
   const handleDeleteTask = async (taskId) => {
     if (window.confirm("Apakah Anda yakin ingin menghapus tugas ini?")) {
       try {
-        setDeletingTaskId(taskId)
         await deleteTask(taskId)
         refreshTasks()
-        console.log("Tugas berhasil dihapus")
       } catch (err) {
         console.error("Gagal menghapus tugas", err)
-        setError("Gagal menghapus tugas. Silakan coba lagi.")
         alert("Gagal menghapus tugas. Silakan coba lagi.")
-      } finally {
-        setDeletingTaskId(null)
       }
     }
   }
@@ -742,7 +744,7 @@ export default function TasksPage({ currentUser }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Enhanced Header */}
+        {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
             <div className="space-y-3">
@@ -763,22 +765,20 @@ export default function TasksPage({ currentUser }) {
           </div>
         </div>
 
-        {/* Enhanced Filters and Search */}
+        {/* Filter dan Pencarian */}
         <div className="mb-8 space-y-4">
           <div className="flex flex-col xl:flex-row xl:items-end gap-4">
-            {/* Enhanced Search */}
             <div className="relative flex-1 max-w-full xl:max-w-lg">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
               <input
                 type="text"
-                placeholder="Cari tugas berdasarkan judul atau deskripsi..."
+                placeholder="Cari tugas berdasarkan judul..."
                 value={searchTerm}
                 onChange={handleSearchChange}
                 className="w-full pl-10 pr-4 py-2.5 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300 bg-white hover:border-slate-400 font-medium placeholder:text-slate-400"
               />
             </div>
 
-            {/* Enhanced Filters with proper sizing */}
             <div className="flex flex-col sm:flex-row gap-3 xl:flex-none">
               {(currentUser?.role === "admin" || currentUser?.role === "semi_admin") && (
                 <CustomSelect
@@ -802,7 +802,7 @@ export default function TasksPage({ currentUser }) {
                 options={sortOptions}
                 value={sortBy}
                 onChange={handleSortChange}
-                placeholder="Urutkan Berdasarkan"
+                placeholder="Urutkan"
                 icon={ArrowDownUp}
                 className="w-full sm:w-44"
               />
@@ -810,30 +810,17 @@ export default function TasksPage({ currentUser }) {
           </div>
         </div>
 
-        {/* Enhanced Content */}
+        {/* Konten Utama */}
         {isLoading ? (
           <div className="flex items-center justify-center py-24">
             <div className="flex flex-col items-center space-y-4 text-slate-600">
-              <div className="relative">
-                <div className="w-12 h-12 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-semibold text-slate-900 mb-1">Memuat tugas...</p>
-                <p className="text-sm text-slate-600">Mohon tunggu sebentar</p>
-              </div>
+              <div className="w-12 h-12 border-4 border-slate-200 border-t-blue-600 rounded-full animate-spin"></div>
+              <p className="text-lg font-semibold text-slate-900">Memuat tugas...</p>
             </div>
           </div>
         ) : error ? (
-          <div className="p-6 bg-red-50 border border-red-200 rounded-xl shadow-sm">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                <XCircle className="h-5 w-5 text-red-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-red-900 mb-1">Terjadi Kesalahan</h3>
-                <p className="text-red-700">{error}</p>
-              </div>
-            </div>
+          <div className="p-6 bg-red-50 border border-red-200 rounded-xl text-center">
+            <p className="text-red-700">{error}</p>
           </div>
         ) : tasks.length > 0 ? (
           <>
@@ -849,27 +836,13 @@ export default function TasksPage({ currentUser }) {
         ) : (
           <div className="text-center py-24">
             <div className="max-w-md mx-auto">
-              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center shadow-md">
-                <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-blue-100 flex items-center justify-center">
+                 <Target className="w-10 h-10 text-blue-600" />
               </div>
-              <h3 className="text-xl font-semibold text-slate-900 mb-3">Tidak ada tugas</h3>
-              <p className="text-slate-600 mb-6 leading-relaxed">
-                Belum ada tugas yang dibuat. Mulai dengan membuat tugas pertama Anda dan tingkatkan produktivitas tim.
+              <h3 className="text-xl font-semibold text-slate-900 mb-3">Tidak ada tugas ditemukan</h3>
+              <p className="text-slate-600 mb-6">
+                Coba ubah filter atau buat tugas baru untuk memulai.
               </p>
-              <button
-                onClick={handleOpenCreateModal}
-                className="inline-flex items-center px-6 py-3 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105 group"
-              >
-                <Plus className="h-4 w-4 mr-2 group-hover:rotate-90 transition-transform duration-300" />
-                Buat Tugas Pertama
-              </button>
             </div>
           </div>
         )}

@@ -3,7 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Http\Resources\Api\V1\UserResource;
-use App\Http\Resources\Api\V1\TaskAttachmentResource; // <-- Tambahkan baris ini
+use App\Http\Resources\Api\V1\TaskAttachmentResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -21,6 +21,7 @@ class TaskResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'status' => $this->status,
+            'priority' => $this->priority, // <-- PERUBAHAN: Menambahkan baris ini
             'due_date' => $this->due_date?->format('Y-m-d'),
             'created_at' => $this->created_at->toDateTimeString(),
             'updated_at' => $this->updated_at->toDateTimeString(),

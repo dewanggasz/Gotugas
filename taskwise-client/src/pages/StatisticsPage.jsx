@@ -309,33 +309,33 @@ export default function StatisticsPage({ currentUser }) {
   }, [])
 
   useEffect(() => {
-    if (currentUser?.role === "admin" || currentUser?.role === "semi_admin") {
+    if (currentUser?.role === "admin" || currentUser?.role === "semi_admin") { //
       getUsers()
-        .then((res) => setUsers(res.data.data))
+        .then((res) => setUsers(res.data.data)) //
         .catch(console.error)
     }
   }, [currentUser])
 
   useEffect(() => {
     const fetchAllData = async () => {
-      setIsLoading(true)
-      setError("")
+      setIsLoading(true) //
+      setError("") //
       try {
-        const params = { period }
-        if (period === "custom") {
-          params.start_date = customRange.start_date
-          params.end_date = customRange.end_date
+        const params = { period } //
+        if (period === "custom") { //
+          params.start_date = customRange.start_date //
+          params.end_date = customRange.end_date //
         }
-        if ((currentUser?.role === "admin" || currentUser?.role === "semi_admin") && selectedUserId) {
-          params.user_id = selectedUserId
+        if ((currentUser?.role === "admin" || currentUser?.role === "semi_admin") && selectedUserId) { //
+          params.user_id = selectedUserId //
         }
-        const response = await getStatistics(params)
-        setDashboardData(response.data)
+        const response = await getStatistics(params) //
+        setDashboardData(response.data) //
       } catch (err) {
-        setError("Gagal memuat data statistik. Pastikan rentang tanggal valid.")
+        setError("Gagal memuat data statistik. Pastikan rentang tanggal valid.") //
         console.error(err)
       } finally {
-        setIsLoading(false)
+        setIsLoading(false) //
       }
     }
     fetchAllData()
@@ -350,7 +350,7 @@ export default function StatisticsPage({ currentUser }) {
   const statusData = dashboardData?.status_composition?.filter((item) => item.value > 0) || []
   const performanceData = dashboardData?.performance || []
   const moodTrendData = dashboardData?.mood_trend || []
-  const kpiData = dashboardData?.kpi_data || [];
+  const kpiData = dashboardData?.kpi_data || []; //
 
   const PIE_COLORS = {
     not_started: "#64748b",
@@ -430,7 +430,7 @@ export default function StatisticsPage({ currentUser }) {
           </div>
 
           {/* Enhanced Admin User Selection */}
-          {(currentUser?.role === "admin" || currentUser?.role === "semi_admin") && (
+          {(currentUser?.role === "admin" || currentUser?.role === "semi_admin") && ( //
             <div className="mt-6 md:mt-8 p-4 md:p-6 bg-white border-2 border-blue-100 rounded-2xl shadow-lg hover:shadow-xl transition-all  animate-in slide-in-from-left duration-700">
               <label className="text-sm font-bold text-slate-900 mb-3 md:mb-4 flex items-center gap-2">
                 <Users className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
@@ -458,7 +458,7 @@ export default function StatisticsPage({ currentUser }) {
           )}
 
           {/* Enhanced Custom Date Range */}
-          {period === "custom" && (
+          {period === "custom" && ( //
             <div className="mt-4 md:mt-6 p-4 md:p-6 bg-white border-2 border-blue-100 rounded-2xl shadow-lg hover:shadow-xl transition-all animate-in slide-in-from-bottom duration-700">
               <p className="text-sm font-bold text-slate-900 mb-3 md:mb-4 flex items-center gap-2">
                 <Activity className="w-4 h-4 md:w-5 md:h-5 text-blue-500" />
@@ -535,19 +535,19 @@ export default function StatisticsPage({ currentUser }) {
               </div>
             )}
 
-            {(currentUser?.role === "admin" || currentUser?.role === "semi_admin") && (
+            {(currentUser?.role === "admin" || currentUser?.role === "semi_admin") && ( //
               <div className="animate-in slide-in-from-bottom duration-700 delay-300">
                 <h2 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
                   <TrendingUp className="w-6 h-6 text-blue-500" />
                   Key Performance Indicators (KPI)
                 </h2>
-                {isLoading ? (
+                {isLoading ? ( //
                   <div className="text-center p-6 bg-white rounded-2xl border border-blue-100 shadow-lg">
                     <p className="text-slate-500 animate-pulse">Memuat data KPI...</p>
                   </div>
-                ) : kpiData.length > 0 ? (
+                ) : kpiData.length > 0 ? ( //
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {kpiData.map(user => (
+                    {kpiData.map(user => ( //
                       <KpiCard key={user.id} user={user} />
                     ))}
                   </div>
@@ -669,7 +669,7 @@ export default function StatisticsPage({ currentUser }) {
             </div>
 
             {/* Enhanced Mobile-Friendly Performance Chart */}
-            {(currentUser?.role === "admin" || currentUser?.role === "semi_admin") && (
+            {(currentUser?.role === "admin" || currentUser?.role === "semi_admin") && ( //
               <div className="animate-in slide-in-from-bottom duration-700 delay-600">
                 <ChartCard title="Performa Individual" isLoading={isLoading}>
                   {performanceData.length > 0 ? (

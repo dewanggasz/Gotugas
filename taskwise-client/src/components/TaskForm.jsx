@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import CollaboratorInput from "./CollaboratorInput" // Assuming this component exists and is styled
+import CollaboratorInput from "./CollaboratorInput"
 import { uploadAttachment, addLinkAttachment, deleteAttachment } from "../services/api"
 import {
   Paperclip,
@@ -15,9 +15,10 @@ import {
   Circle,
   XCircle,
   PlayCircle,
+  Zap, // Impor ikon untuk Prioritas
 } from "lucide-react"
 
-// Re-using CustomSelect from tasks-page for consistency
+// Komponen CustomSelect yang konsisten
 const CustomSelect = ({ options, value, onChange, placeholder, icon: Icon, className = "" }) => {
   const [isOpen, setIsOpen] = useState(false)
   const selectRef = useRef(null)
@@ -100,7 +101,7 @@ const CustomSelect = ({ options, value, onChange, placeholder, icon: Icon, class
   )
 }
 
-// Helper component for each attachment item
+// Komponen untuk item lampiran
 const AttachmentItem = ({ attachment, onDelete, isDeleting }) => {
   const getIcon = () => {
     if (attachment.type === "image") return <ImageIcon className="w-4 h-4 text-purple-600" />
@@ -136,16 +137,17 @@ const AttachmentItem = ({ attachment, onDelete, isDeleting }) => {
 }
 
 export default function TaskForm({ onSubmit, onCancel, task, users = [], currentUser, onAttachmentUpdate }) {
-  // State for core task data
+  // State untuk data inti tugas
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [status, setStatus] = useState("not_started")
   const [dueDate, setDueDate] = useState("")
+  const [priority, setPriority] = useState("medium") // State baru untuk prioritas
   const [collaborators, setCollaborators] = useState([])
   const [updateMessage, setUpdateMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // State for attachment management
+  // State untuk manajemen lampiran
   const [linkUrl, setLinkUrl] = useState("")
   const [isUploading, setIsUploading] = useState(false)
   const [isAddingLink, setIsAddingLink] = useState(false)
@@ -153,30 +155,31 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
   const [attachmentError, setAttachmentError] = useState("")
   const fileInputRef = useRef(null)
 
-  // Populate form when component mounts or task data changes
+  // Mengisi form saat komponen dimuat atau data tugas berubah
   useEffect(() => {
     if (task) {
       setTitle(task.title || "")
       setDescription(task.description || "")
       setStatus(task.status || "not_started")
       setDueDate(task.due_date || "")
-      // Filter out the creator from collaborators if they are implicitly added
+      setPriority(task.priority || "medium") // Set state prioritas saat edit
       const existingCollaborators = task.collaborators
-        .filter((c) => c.id !== task.user?.id) // Ensure task.user exists
+        .filter((c) => c.id !== task.user?.id)
         .map((c) => ({ user_id: c.id, name: c.name, permission: c.permission }))
       setCollaborators(existingCollaborators)
     } else {
-      // Reset for 'Create' mode
+      // Reset untuk mode 'Create'
       setTitle("")
       setDescription("")
       setStatus("not_started")
       setDueDate("")
+      setPriority("medium") // Reset state prioritas
       setCollaborators([])
     }
-    setUpdateMessage("") // Clear update message on task change
+    setUpdateMessage("") // Hapus pesan pembaruan saat tugas berubah
   }, [task])
 
-  // Handler for submitting core task data
+  // Handler untuk mengirimkan data inti tugas
   const handleSubmit = async (e) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -185,6 +188,7 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
       description,
       status,
       due_date: dueDate,
+      priority, // Tambahkan prioritas ke data yang dikirim
       collaborators: collaborators.map((c) => ({ user_id: c.user_id, permission: c.permission })),
       update_message: updateMessage,
     }
@@ -195,7 +199,7 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
     }
   }
 
-  // --- Instant Logic for Attachments ---
+  // --- Logika Instan untuk Lampiran ---
   const handleFileChange = async (e) => {
     const file = e.target.files[0]
     if (!file) return
@@ -204,7 +208,7 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
     setIsUploading(true)
     try {
       await uploadAttachment(task.id, file)
-      onAttachmentUpdate() // Callback to refresh task data in parent
+      onAttachmentUpdate() // Callback untuk me-refresh data tugas di parent
     } catch (err) {
       setAttachmentError("Gagal mengunggah file. Pastikan ukuran tidak melebihi 5MB.")
       console.error("Gagal mengunggah file:", err)
@@ -227,7 +231,7 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
     try {
       await addLinkAttachment(task.id, linkUrl)
       setLinkUrl("")
-      onAttachmentUpdate() // Callback to refresh task data in parent
+      onAttachmentUpdate() // Callback untuk me-refresh data tugas di parent
     } catch (err) {
       setAttachmentError("Gagal menambah link. Pastikan URL valid.")
       console.error("Gagal menambah link:", err)
@@ -242,7 +246,7 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
       setDeletingAttachmentId(attachmentId)
       try {
         await deleteAttachment(attachmentId)
-        onAttachmentUpdate() // Callback to refresh task data in parent
+        onAttachmentUpdate() // Callback untuk me-refresh data tugas di parent
       } catch (err) {
         setAttachmentError("Gagal menghapus lampiran.")
         console.error("Gagal menghapus lampiran:", err)
@@ -258,10 +262,17 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
     { value: "completed", label: "Selesai", icon: CheckCircle2 },
     { value: "cancelled", label: "Dibatalkan", icon: XCircle },
   ]
+  
+  // Opsi baru untuk prioritas
+  const priorityOptions = [
+    { value: "high", label: "Tinggi", icon: Zap },
+    { value: "medium", label: "Sedang", icon: Zap },
+    { value: "low", label: "Rendah", icon: Zap },
+  ]
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Main Form Section */}
+      {/* Bagian Form Utama */}
       <div>
         <label htmlFor="title" className="block text-sm font-medium text-slate-800 mb-2">
           Judul Tugas
@@ -303,8 +314,9 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
         ></textarea>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Kolom Status */}
+        <div className="sm:col-span-1">
           <label htmlFor="status" className="block text-sm font-medium text-slate-800 mb-2">
             Status
           </label>
@@ -314,10 +326,23 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
             onChange={setStatus}
             placeholder="Pilih Status"
             icon={Filter}
-            className="w-full"
           />
         </div>
-        <div>
+        {/* Kolom Prioritas (BARU) */}
+        <div className="sm:col-span-1">
+          <label htmlFor="priority" className="block text-sm font-medium text-slate-800 mb-2">
+            Prioritas
+          </label>
+          <CustomSelect
+            options={priorityOptions}
+            value={priority}
+            onChange={setPriority}
+            placeholder="Pilih Prioritas"
+            icon={Zap}
+          />
+        </div>
+        {/* Kolom Jatuh Tempo */}
+        <div className="sm:col-span-1">
           <label htmlFor="dueDate" className="block text-sm font-medium text-slate-800 mb-2">
             Jatuh Tempo
           </label>
@@ -347,7 +372,7 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
         </div>
       )}
 
-      {/* Attachment Section (Only appears in edit mode) */}
+      {/* Bagian Lampiran (Hanya muncul dalam mode edit) */}
       {task && (
         <>
           <hr className="my-6 border-t border-slate-100" />
@@ -411,7 +436,7 @@ export default function TaskForm({ onSubmit, onCancel, task, users = [], current
         </>
       )}
 
-      {/* Action Buttons */}
+      {/* Tombol Aksi */}
       <div className="flex justify-end space-x-3 pt-6 border-t border-slate-100 mt-8">
         <button
           type="button"
